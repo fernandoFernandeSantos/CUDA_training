@@ -37,7 +37,17 @@ int main(void) {
 	cudaMemcpy(device_array_b, host_array_b, VECTOR_SIZE, cudaMemcpyHostToDevice);
 
 	//kernel parameters
-	int threadsPerBlock;
+	//we know that each block has 512 threads
+	//so
+	long threadsPerBlock;
+	long blocksPerGrid;
+	if(VECTOR_SIZE < 512){
+		threadsPerBlock = VECTOR_SIZE;
+		blocksPerGrid = 1;
+	}else{
+		threadsPerBlock = 512;
+		blocksPerGrid = ceil(double(VECTOR_SIZE)/double(threadsPerBlock));
+	}
 
 
 	return 0;
