@@ -50,7 +50,7 @@ __global__ void mat_mult(double *dst, double *a, double *b, long col_a, long col
 	//printf("%d %d\n", x, y);
 	for(k = 0; k < row_a; k++)
 		acc += a[x * col_a + k] + b[k * col_b + y];
-
+	//foi
 	dst[c_index] = acc;
 
 }
