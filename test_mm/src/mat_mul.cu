@@ -44,10 +44,10 @@ __global__ void mat_mult(double *dst, double *a, double *b, long col_a, long col
 	long x = (blockDim.x * blockIdx.x) + threadIdx.x;
 	long y = (blockDim.y * blockIdx.y) + threadIdx.y;
 
-	long c_index = (col_b * y) + x;
+	long c_index = (col_b * x) + y;
 	double acc = 0;
 	long k;
-	printf("%d %d\n", x, y);
+	//printf("%d %d\n", x, y);
 	for(k = 0; k < row_a; k++)
 		acc += a[x * col_a + k] + b[k * col_b + y];
 
