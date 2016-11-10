@@ -5,11 +5,11 @@
 
 #define BLOCK_SIZE 32
 
-#define ROWS_A 4
+#define ROWS_A 6
 #define COLLUMS_A 6
 
 #define ROWS_B 6
-#define COLLUMS_B 4
+#define COLLUMS_B 6
 
 #define VECTOR_SIZE_A COLLUMS_A * ROWS_A
 #define VECTOR_SIZE_B COLLUMS_B * ROWS_B
@@ -50,7 +50,7 @@ __global__ void mat_mult(double *dst, double *a, double *b, long col_a, long col
 	//printf("%d %d\n", x, y);
 	for(k = 0; k < row_a; k++)
 		acc += a[x * col_a + k] + b[k * col_b + y];
-	//foi
+
 	dst[c_index] = acc;
 
 }
