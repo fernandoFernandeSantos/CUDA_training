@@ -311,8 +311,8 @@ void matrix_multiplication_abft(){
 	long threads_abft_first = ceil(lin_a / float(blocks));
 	long threads_abft_second = ceil(col_b / float(blocks));
 
-	first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a, col_a);
-	second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b, col_b);
+	//first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a, col_a);
+	//second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b, col_b);
 
 	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 			device_array_b, N);
