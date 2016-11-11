@@ -281,9 +281,7 @@ void matrix_multiplication_abft(){
 	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
 	fill_mat(host_array_a, vec_siz_a);
 	fill_mat(host_array_b, vec_siz_b);
-	print_mat(host_array_a, lin_a + 1, col_a, "matrix A");
-	printf("\n");
-	print_mat(host_array_b, lin_b, col_b + 1, "matrix B");
+
 	//perform host matrix multiplication
 	//	gemm_1d(host_array_a, host_array_b, host_array_c_temp, ROWS_A, COLLUMS_A,
 	//			ROWS_B, COLLUMS_B, ROWS_A, COLLUMS_B);
@@ -311,9 +309,13 @@ void matrix_multiplication_abft(){
 	long threads_abft_first = ceil(lin_a / float(blocks));
 	long threads_abft_second = ceil(col_b / float(blocks));
 
-	//first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a, col_a);
-	//second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b, col_b);
-
+	first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a, col_a);
+	second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b, col_b);
+	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
+	print_mat(host_array_a, lin_a + 1, col_a, "matrix A");
+	printf("\n");
+	print_mat(host_array_b, lin_b, col_b + 1, "matrix B");
 	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 			device_array_b, N);
 	printf("\nblocks %ld threads %ld\n", blocks, threads);
