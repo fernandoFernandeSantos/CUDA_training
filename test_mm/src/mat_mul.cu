@@ -108,7 +108,7 @@ __global__ void mat_mult(double *dst, double *a, double *b, long col) {
 	long i = blockIdx.y * blockDim.y + threadIdx.y;
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (i > size || j > size)
+	if (i > col || j > col)
 		return;
 
 	double acc = 0;
