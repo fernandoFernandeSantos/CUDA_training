@@ -104,18 +104,18 @@ __global__ void second_abraham_op(double *b, long collums, long rows){
 	b[i * (collums + 1) + collums] = acc;
 }
 
-__global__ void mat_mult(double *dst, double *a, double *b, long size) {
-	long row = blockIdx.y * blockDim.y + threadIdx.y;
-	long col = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void mat_mult(double *dst, double *a, double *b, long col) {
+	long i = blockIdx.y * blockDim.y + threadIdx.y;
+	long j = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (row > size || col > size)
+	if (i > size || j > size)
 		return;
 
 	double acc = 0;
-	long index_dst = row * N + col;
+	long index_dst = i * col + j;
 	long k;
 	for (k = 0; k < size; k++) {
-		acc += a[row * size + k] * b[k * size + col];
+		acc += a[i * size + k] * b[k * size + j];
 	}
 	dst[index_dst] = acc;
 }
@@ -317,7 +317,7 @@ void matrix_multiplication_abft(){
 	printf("\n");
 	print_mat(host_array_b, lin_b, col_b + 1, "matrix B");
 	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
-			device_array_b, N);
+			device_array_b, col_b);
 	printf("\nblocks %ld threads %ld\n", blocks, threads);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat(host_array_c, lin_a  +1 , col_b +1, "GPU result mat");
