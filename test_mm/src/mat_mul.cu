@@ -63,18 +63,17 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 
 //since dgemm is optimized for square matrices I'm going to use
 //first ABRAHAM operation
-
-__global__ void first_abraham_op(double *a, double *b, long collums,
-		long rows) {
-//	long i = blockIdx.y * blockDim.y + threadIdx.y;
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
-//    for (j = 0; j < col_a; j++){
-//        acc = 0;
-//        for(i = 0; i < lin_a; i++)
-//            acc += a[i][j];
+//	for (j = 0; j < col_a; j++) {
+//		acc = 0;
+//		for (i = 0; i < lin_a; i++)
 //
-//        a[lin_a][j] = acc;
-//    }
+//			acc += a[i * col_a + j];
+//
+//        a[lin_a * col_a + j] = acc;
+//	}
+__global__ void first_abraham_op(double *a, long collums,
+		long rows) {
+	long j = blockIdx.x * blockDim.x + threadIdx.x;
 	//iterate on j dimension
 	long i;
 	double acc = 0;
@@ -82,7 +81,27 @@ __global__ void first_abraham_op(double *a, double *b, long collums,
 		acc += a[i * collums + j];
 	}
 
-	a[(rows - 1) * rows + j] = acc;
+	a[rows * collums + j] = acc;
+}
+
+/**
+ * 	for (i = 0; i < lin_b; i++) {
+		acc = 0;
+		for (j = 0; j < col_b; j++)
+			acc += b[i * (col_b + 1) + j];
+		//printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
+		b[i * (col_b + 1) + col_b] = acc;
+	}
+ */
+__global__ void second_abraham_op(double *b, long collums, long rows){
+	long i = blockIdx.x * blockDim.x + threadIdx.x;
+	long j;
+	double acc = 0;
+	for(j = 0; j < collums; j++){
+		acc += b[i * (collums + 1) + j];
+	}
+
+	b[i * (collums + 1) + collums] = acc;
 }
 
 __global__ void mat_mult(double *dst, double *a, double *b, long size) {
@@ -141,7 +160,6 @@ int gemm_ongpu_abft(double *a, double *b, double *c, long lin_a, long col_a,
 
 			acc += a[i * col_a + j];
 
-//        printf("lin a * col a %ld j %ld acc %lf\n",  lin_a * col_a, j, acc);
         a[lin_a * col_a + j] = acc;
 	}
 
@@ -244,70 +262,94 @@ void matrix_multiplication_no_abft() {
 	free(host_array_c_temp);
 }
 
-void matrix_multiplication_abft() {
-	//first matrix has rows + 1
-	const long a_rows = ROWS_A + 1;
-	const long a_coll = COLLUMS_A + 1;
-	const long b_rows = ROWS_B + 1;
-	const long b_coll = COLLUMS_B + 1;
-	//total size of all vectors
-	const long a_pure_siz = (a_rows * a_coll);
-	const long b_pure_siz = (b_rows * b_coll);
-	const long c_pure_siz = (a_rows * b_coll);
-	//---------------------------
-	//call byte size
-	const long siz_a = a_pure_siz * sizeof(double);
-	const long siz_b = b_pure_siz * sizeof(double);
-	const long siz_c = (a_rows * b_coll) * sizeof(double);
-	//--------------------------
-	//allocate all host memory
-	double* host_array_a = (double*) calloc(a_pure_siz, sizeof(double));
-	double* host_array_b = (double*) calloc(b_pure_siz, sizeof(double));
-	double* host_array_c = (double*) calloc(c_pure_siz, sizeof(double));
-	double* host_array_c_gpu = (double*) calloc(c_pure_siz, sizeof(double));
-	//fill a and b matrices
-	fill_mat(host_array_a, a_pure_siz);
-	fill_mat(host_array_b, b_pure_siz);
-
+void matrix_multiplication_abft(){
+	long size = 10 * 10;
+	long lin_a = 10;
+	long col_a = 10;
+	long lin_b = col_a;
+	long col_b = 10;
+	long vec_siz_a = ((lin_a + 1) * col_a);
+	long vec_siz_b = (lin_b * (col_b + 1));
+	long vec_siz_c = ((lin_a + 1) * (col_b + 1));
+	const long siz_a = vec_siz_a * sizeof(double);
+	const long siz_b = vec_siz_b * sizeof(double);
+	const long siz_c = vec_siz_b * sizeof(double);
+	//host memories
+	double* host_array_a = (double*) calloc(vec_siz_a, sizeof(double));
+	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
+	double* host_array_c = (double*) calloc(vec_siz_c, sizeof(double));
+	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
+	fill_mat(host_array_a, vec_siz_a);
+	fill_mat(host_array_b, vec_siz_b);
+	//print_mat(host_array_a, COLLUMS_A, ROWS_A, "matrix A");
+	printf("\n");
+	//print_mat(host_array_b, COLLUMS_B, ROWS_B, "matrix B");
+	//perform host matrix multiplication
+	//	gemm_1d(host_array_a, host_array_b, host_array_c_temp, ROWS_A, COLLUMS_A,
+	//			ROWS_B, COLLUMS_B, ROWS_A, COLLUMS_B);
+	//print_mat(host_array_c_temp, COLLUMS_B, ROWS_A, "matrix C temp");
 	//cuda memories
 	double *device_array_a, *device_array_b, *device_array_c;
 	cudaMalloc(&device_array_a, siz_a);
 	cudaMalloc(&device_array_b, siz_b);
 	cudaMalloc(&device_array_c, siz_c);
-
-	//copy memory to device
+	//copy to device
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
+	//kernel parameters
+	//we know that each block has 1024 threads
+	//these vars are for mat multplication,
+	long blocks = ceil(size / float(BLOCK_SIZE));
+	long threads = ceil(size / float(blocks));
 
-	//
+	//2d grid
+	dim3 gridDim(blocks, blocks);
+	//threads num, 2d
+	dim3 blockDim(threads, threads);
 
-	free(host_array_a);
-	free(host_array_b);
-	free(host_array_c);
-	free(host_array_c_gpu);
+	//1d grid for abft operations
+	long threads_abft_first = ceil(lin_a / float(blocks));
+	long threads_abft_second = ceil(col_b / float(blocks));
+
+	first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a, col_a);
+	second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b, col_b);
+
+	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
+			device_array_b, N);
+	printf("\nblocks %ld threads %ld\n", blocks, threads);
+	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
+	print_mat(host_array_c, lin_a  +1 , col_b +1, "GPU result mat");
+	printf("compare matrices\n");
+	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
 	cudaFree(device_array_a);
 	cudaFree(device_array_b);
 	cudaFree(device_array_c);
+	free(host_array_a);
+	free(host_array_b);
+	free(host_array_c);
+	free(host_array_c_temp);
 }
 
+
+
 int main(void) {
-	long m_a = 15;
-	long n_a = 10;
-	long m_b = n_a;
-	long n_b = 12;
-	double a[(m_a + 1) * n_a], b[m_a * (n_a + 1)], c[(m_a + 1) * (n_b + 1)];
-
-	fill_mat(a, (m_a + 1) * n_a);
-	fill_mat(b, m_b * (n_b + 1));
-
+//	long m_a = 15;
+//	long n_a = 10;
+//	long m_b = n_a;
+//	long n_b = 12;
+//	double a[(m_a + 1) * n_a], b[m_a * (n_a + 1)], c[(m_a + 1) * (n_b + 1)];
+//
+//	fill_mat(a, (m_a + 1) * n_a);
+//	fill_mat(b, m_b * (n_b + 1));
+//
+////	print_mat(a, m_a + 1,  n_a,  "matrix a");
+////	print_mat(b, m_b, n_b + 1, "matrix b");
+//
+//	gemm_ongpu_abft(a, b, c, m_a, n_a, m_b, n_b);
 //	print_mat(a, m_a + 1,  n_a,  "matrix a");
 //	print_mat(b, m_b, n_b + 1, "matrix b");
+//	print_mat(c, m_a + 1, n_b + 1, "matrix c");
 
-	gemm_ongpu_abft(a, b, c, m_a, n_a, m_b, n_b);
-	print_mat(a, m_a + 1,  n_a,  "matrix a");
-	print_mat(b, m_b, n_b + 1, "matrix b");
-	print_mat(c, m_a + 1, n_b + 1, "matrix c");
-
-//	matrix_multiplication_abft();
+	matrix_multiplication_abft();
 	return 0;
 }
