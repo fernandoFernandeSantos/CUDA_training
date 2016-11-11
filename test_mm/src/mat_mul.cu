@@ -263,7 +263,7 @@ void matrix_multiplication_no_abft() {
 }
 
 void matrix_multiplication_abft(){
-	long size = 10 * 10;
+	long size = 10;
 	long lin_a = 10;
 	long col_a = 10;
 	long lin_b = col_a;
