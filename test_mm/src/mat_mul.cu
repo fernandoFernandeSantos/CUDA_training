@@ -115,7 +115,7 @@ __global__ void mat_mult(double *dst, double *a, double *b, long col) {
 	long index_dst = i * col + j;
 	long k;
 	for (k = 0; k < col; k++) {
-		acc += a[i * size + k] * b[k * size + j];
+		acc += a[i * col + k] * b[k * col + j];
 	}
 	dst[index_dst] = acc;
 }
