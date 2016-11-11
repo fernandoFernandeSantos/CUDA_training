@@ -5,7 +5,7 @@
 
 #define BLOCK_SIZE 32
 
-#define N 512
+#define N 6
 #define ROWS_A N
 #define COLLUMS_A N
 
@@ -61,22 +61,29 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 		dst[index] = src[index];
 }
 
+//since dgemm is optimized for square matrices I'm going to use
+//first ABRAHAM operation
 
-//since dgemm is optimized for square matrices
-__global__ void calc_abft_values(double *a, double *b, long collums,
+__global__ void first_abraham_op(double *a, double *b, long collums,
 		long rows) {
-	long i = blockIdx.y * blockDim.y + threadIdx.y;
+//	long i = blockIdx.y * blockDim.y + threadIdx.y;
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	//first ABRAHAM operation
-	__shared__ double acc = 0;
-	__syncthreads();
+//    for (j = 0; j < col_a; j++){
+//        acc = 0;
+//        for(i = 0; i < lin_a; i++)
+//            acc += a[i][j];
+//
+//        a[lin_a][j] = acc;
+//    }
+	//iterate on j dimension
+	long i;
+	double acc = 0;
+	for (i = 0; i < rows; i++) {
+		acc += a[i * collums + j];
+	}
 
-	attomicAdd(&acc, a[i * collums + j]);
-	__syncthreads();
-
-	a[rows - 1 + j] = acc;
+	a[(rows - 1) * rows + j] = acc;
 }
-
 
 __global__ void mat_mult(double *dst, double *a, double *b, long size) {
 	long row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -94,8 +101,8 @@ __global__ void mat_mult(double *dst, double *a, double *b, long size) {
 	dst[index_dst] = acc;
 }
 
-void print_mat(double *mat, long n, long m, const char *mat_name) {
-	printf("printing %s\n", mat_name);
+void print_mat(double *mat, long m, long n, const char *mat_name) {
+	printf("printing %s lin %ld col %ld\n", mat_name, m, n);
 	long i, j;
 	for (i = 0; i < m; i++) {
 		for (j = 0; j < n; j++)
@@ -107,7 +114,7 @@ void print_mat(double *mat, long n, long m, const char *mat_name) {
 void fill_mat(double* t, long n) {
 	long i;
 	for (i = 0; i < n; i++) {
-		t[i] = i;
+		t[i] = 1;
 	}
 }
 
@@ -118,6 +125,73 @@ void compare(double *t, double *s, long siz) {
 			printf("t[%ld] is diff from s[%ld] on diff %lf", i, i,
 					fabs(t[i]) - fabs(s[i]));
 	}
+}
+
+int gemm_ongpu_abft(double *a, double *b, double *c, long lin_a, long col_a,
+		long lin_b, long col_b) {
+	long i, j;
+	double acc = 0;
+	int ret = 0;
+	long col_c = col_b;
+	long lin_c = lin_a;
+	//first ABRAHAM operation
+	for (j = 0; j < col_a; j++) {
+		acc = 0;
+		for (i = 0; i < lin_a; i++)
+
+			acc += a[i * col_a + j];
+
+//        printf("lin a * col a %ld j %ld acc %lf\n",  lin_a * col_a, j, acc);
+        a[lin_a * col_a + j] = acc;
+	}
+
+	//second ABRAHAM operation
+	for (i = 0; i < lin_b; i++) {
+		acc = 0;
+		for (j = 0; j < col_b; j++)
+			acc += b[i * (col_b + 1) + j];
+		//printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
+		b[i * (col_b + 1) + col_b] = acc;
+	}
+
+	//print_mat(a, lin_a + 1, col_a);
+	//printf("\n");
+	//print_mat(b, lin_b, col_b + 1);
+	//performs matrix multiplication
+	gemm_1d(a, b, c, lin_a + 1, col_a, lin_b, col_b + 1, col_b + 1, lin_a + 1);
+
+	//check all checksums
+	//line checksum
+	for (j = 0; j < col_a; j++) {
+		acc = 0;
+		for (i = 0; i < lin_a; i++)
+			acc += c[i * col_c + j];
+
+		if (fabs(c[lin_a * col_c + j]) - fabs(acc) >= MAX_THRESHOLD) {
+//			printf(
+//					"lin - position corrupted [%ld][%ld] - exp chsum %lf got chsum %lf diff - %lf\n",
+//					lin_a, j, c[lin_a * col_c + j], acc,
+//					c[lin_a * col_c + j] - acc);
+			ret++;
+		}
+	}
+
+	//collum checksum
+	for (i = 0; i < lin_b; i++) {
+		acc = 0;
+		for (j = 0; j < col_b; j++)
+			acc += c[i * col_c + j];
+
+		if (fabs(c[i * col_c + col_b] - acc) >= MAX_THRESHOLD) {
+//			printf(
+//					"collum - position corrupted [%ld][%ld] - exp chsum %lf got chsum %lf diff %lf\n",
+//					i, col_b, c[i * col_c + col_b], acc,
+//					c[i * col_c + col_b] - acc);
+			ret++;
+		}
+	}
+	return ret;
+
 }
 
 void matrix_multiplication_no_abft() {
@@ -217,7 +291,23 @@ void matrix_multiplication_abft() {
 }
 
 int main(void) {
+	long m_a = 15;
+	long n_a = 10;
+	long m_b = n_a;
+	long n_b = 12;
+	double a[(m_a + 1) * n_a], b[m_a * (n_a + 1)], c[(m_a + 1) * (n_b + 1)];
 
-	matrix_multiplication_abft();
+	fill_mat(a, (m_a + 1) * n_a);
+	fill_mat(b, m_b * (n_b + 1));
+
+//	print_mat(a, m_a + 1,  n_a,  "matrix a");
+//	print_mat(b, m_b, n_b + 1, "matrix b");
+
+	gemm_ongpu_abft(a, b, c, m_a, n_a, m_b, n_b);
+	print_mat(a, m_a + 1,  n_a,  "matrix a");
+	print_mat(b, m_b, n_b + 1, "matrix b");
+	print_mat(c, m_a + 1, n_b + 1, "matrix c");
+
+//	matrix_multiplication_abft();
 	return 0;
 }
