@@ -1,4 +1,4 @@
-NVCC = /usr/local/cuda-7.0/bin/nvcc
+NVCC = nvcc
 CC = /usr/bin/gcc
 CXX = /usr/bin/g++
 SRC=src/
@@ -6,7 +6,7 @@ SRC=src/
 VEC_ADD = vec_add
 MAT_MUL = mat_mul
 
-NVCCFLAGS =
+NVCCFLAGS = -lcublas -lcublas_device
 ifeq ($(DEBUG), 1)
 NVCCFLAGS += -G -g
 

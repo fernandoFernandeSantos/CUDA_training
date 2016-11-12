@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "cuda_runtime.h"
+#include <cublas_v2.h>
 
 #define BLOCK_SIZE 32
 
@@ -71,8 +72,7 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 //
 //        a[lin_a * col_a + j] = acc;
 //	}
-__global__ void first_abraham_op(double *a, long collums,
-		long rows) {
+__global__ void first_abraham_op(double *a, long collums, long rows) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
 	//iterate on j dimension
 	long i;
@@ -86,22 +86,23 @@ __global__ void first_abraham_op(double *a, long collums,
 
 /**
  * 	for (i = 0; i < lin_b; i++) {
-		acc = 0;
-		for (j = 0; j < col_b; j++)
-			acc += b[i * (col_b + 1) + j];
-		//printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
-		b[i * (col_b + 1) + col_b] = acc;
-	}
+ acc = 0;
+ for (j = 0; j < col_b; j++)
+ acc += b[i * (col_b + 1) + j];
+ //printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
+ b[i * (col_b + 1) + col_b] = acc;
+ }
  */
-__global__ void second_abraham_op(double *b, long collums, long rows){
+__global__ void second_abraham_op(double *b, long collums, long rows) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
 	long j;
 	double acc = 0;
-	for(j = 0; j < collums; j++){
+	for (j = 0; j < collums; j++) {
 		acc += b[i * (collums + 1) + j];
 	}
 
 	b[i * (collums + 1) + collums] = acc;
+
 }
 
 __global__ void mat_mult(double *dst, double *a, double *b, long col) {
@@ -152,7 +153,7 @@ int gemm_ongpu_abft(double *a, double *b, double *c, long lin_a, long col_a,
 	double acc = 0;
 	int ret = 0;
 	long col_c = col_b;
-	long lin_c = lin_a;
+//	long lin_c = lin_a;
 	//first ABRAHAM operation
 	for (j = 0; j < col_a; j++) {
 		acc = 0;
@@ -160,7 +161,7 @@ int gemm_ongpu_abft(double *a, double *b, double *c, long lin_a, long col_a,
 
 			acc += a[i * col_a + j];
 
-        a[lin_a * col_a + j] = acc;
+		a[lin_a * col_a + j] = acc;
 	}
 
 	//second ABRAHAM operation
@@ -262,7 +263,29 @@ void matrix_multiplication_no_abft() {
 	free(host_array_c_temp);
 }
 
-void matrix_multiplication_abft(){
+//emm(cublasHandle_t handle,
+//                           cublasOperation_t transa, cublasOperation_t transb,
+//                           int m, int n, int k,
+//                           const double          *alpha,
+//                           const double          *A, int lda,
+//                           const double          *B, int ldb,
+//                           const double          *beta,
+//                           double          *C, int ldc)
+//
+//
+//Read more at: http://docs.nvidia.com/cuda/cublas/index.html#ixzz4PlFurrom
+//Follow us: @GPUComputing on Twitter | NVIDIA on Facebook
+
+cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b, double *c) {
+	cublasHandle_t handle;
+	cublasCreate(&handle);
+	int lda = m, ldb = k, ldc = m;
+	return cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, (double*) 1,
+			a, lda, b, ldb, (double*) 1, c, ldc);
+	cublasDestroy(handle);
+}
+
+void matrix_multiplication_abft() {
 	long size = 10;
 	long lin_a = 10;
 	long col_a = 10;
@@ -309,18 +332,21 @@ void matrix_multiplication_abft(){
 	long threads_abft_first = ceil(lin_a / float(blocks));
 	long threads_abft_second = ceil(col_b / float(blocks));
 
-	first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a, col_a);
-	second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b, col_b);
+	first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a,
+			col_a);
+	second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b,
+			col_b);
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
 	print_mat(host_array_a, lin_a + 1, col_a, "matrix A");
 	printf("\n");
 	print_mat(host_array_b, lin_b, col_b + 1, "matrix B");
-	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
-			device_array_b, col_b);
+//	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
+//			device_array_b, col_b);
+	dgemm_host(lin_a,col_b,col_a, device_array_a, device_array_b, device_array_c);
 	printf("\nblocks %ld threads %ld\n", blocks, threads);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat(host_array_c, lin_a  +1 , col_b +1, "GPU result mat");
+	print_mat(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
 	printf("compare matrices\n");
 	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
 	cudaFree(device_array_a);
@@ -331,8 +357,6 @@ void matrix_multiplication_abft(){
 	free(host_array_c);
 	free(host_array_c_temp);
 }
-
-
 
 int main(void) {
 //	long m_a = 15;
