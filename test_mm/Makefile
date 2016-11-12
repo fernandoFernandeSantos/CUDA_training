@@ -6,7 +6,7 @@ SRC=src/
 VEC_ADD = vec_add
 MAT_MUL = mat_mul
 
-NVCCFLAGS = -lcublas -lcublas_device
+NVCCFLAGS = -lcublas -lcublas_device -gencode arch=compute_35,code=sm_35
 ifeq ($(DEBUG), 1)
 NVCCFLAGS += -G -g
 
