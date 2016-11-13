@@ -76,27 +76,27 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 //rows_b MUST BE THE SAME OF cols_a
 __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	long i = blockIdx.y * blockDim.y + threadIdx.y;
+//	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
 	//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
 	//first I calculate the checksum values
-	if(((i + 1) % rows_a == 0) && (i > 0)){
-		//iterate on j dimension
-		long k;
-		double acc = 0;
-		for (k = 0; k < rows_a - 1; k++) {
-			acc += a[j * rows_a + k];
-		}
-		//printf("acc %lf on pos %d\n", acc, rows_a * j + rows_a);
+//	if(((i + 1) % rows_a == 0) && (i > 0)){
+//		//iterate on j dimension
+	long k;
+	double acc = 0;
+	for (k = 0; k < rows_a; k++) {
+		acc += a[j * rows_a + k];
+	}
+	//printf("acc %lf on pos %d\n", acc, rows_a * j + rows_a);
 //		printf("passou dentro acc %lf rows_a * cols_a_rows_b + j %ld\n",acc, (rows_a) * (cols_a_rows_b - 1) + j);
 
-		a[(rows_a) * j + rows_a - 1] = acc;
-	}
+	a[(rows_a) * j + rows_a - 1] = acc;
+//	}
 	//so when I could add a extra line and collum, there will be a blanck collum for matrix A
-	if(((j + 1) % cols_a_rows_b == 0) && (j > 0)){
-		a[rows_a * cols_a_rows_b + i] = 0;
-
-	}
+//	if (((j + 1) % cols_a_rows_b == 0) && (j > 0)) {
+//		a[rows_a * cols_a_rows_b + i] = 0;
+//
+//	}
 
 }
 
@@ -109,12 +109,13 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
  b[i * (col_b + 1) + col_b] = acc;
  }
  */
-__global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b) {
+__global__ void second_abraham_op(double *b, long rows_b_cols_a,
+		long collums_b) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
 	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
 	//printf("j %ld rows_b %ld j mod rows %ld\n", j, rows_b_cols_a, j % rows_b_cols_a);
-	if(((j + 1) % rows_b_cols_a == 0) && (j > 0)){
+	if (((j + 1) % rows_b_cols_a == 0) && (j > 0)) {
 		long k;
 		double acc = 0;
 		for (k = 0; k < collums_b; k++) {
@@ -155,19 +156,19 @@ void print_mat_row_major(double *mat, long m, long n, const char *mat_name) {
 	}
 }
 
-void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
+void print_mat_collum_major(double *mat, long m, long n, const char *mat_name) {
 	printf("COLLUM-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
 	long i, j;
-	for(i = 0; i < m; i++){
+	for (i = 0; i < m; i++) {
 
-		for(j = 0; j < n; j++){
-			printf("%ld ",(PRINT_TYPE)mat[j*m + i]);
+		for (j = 0; j < n; j++) {
+			printf("%ld ", (PRINT_TYPE) mat[j * m + i]);
 		}
 		printf("\n");
 	}
 	printf("on vector 1d\n");
-	for(i = 0; i < m * n; i++){
-		printf("%ld ", (PRINT_TYPE)mat[i]);
+	for (i = 0; i < m * n; i++) {
+		printf("%ld ", (PRINT_TYPE) mat[i]);
 	}
 	printf("\n");
 
@@ -180,12 +181,11 @@ void fill_mat(double* t, long n) {
 	}
 }
 
-
-void fill_mat_mn(double *t, long m, long n){
-	long i,j;
-	for(i = 0; i < m; i++)
-		for(j = 0; j < n; j++)
-				t[j*m + i] = double(i);
+void fill_mat_mn(double *t, long m, long n) {
+	long i, j;
+	for (i = 0; i < m; i++)
+		for (j = 0; j < n; j++)
+			t[j * m + i] = double(i);
 }
 void compare(double *t, double *s, long siz) {
 	long i;
@@ -195,7 +195,6 @@ void compare(double *t, double *s, long siz) {
 					fabs(t[i]) - fabs(s[i]));
 	}
 }
-
 
 //emm(cublasHandle_t handle,
 //                           cublasOperation_t transa, cublasOperation_t transb,
@@ -210,16 +209,17 @@ void compare(double *t, double *s, long siz) {
 //Read more at: http://docs.nvidia.com/cuda/cublas/index.html#ixzz4PlFurrom
 //Follow us: @GPUComputing on Twitter | NVIDIA on Facebook
 
-cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b, double *c) {
+cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b,
+		double *c) {
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 	int lda = m, ldb = k, ldc = m;
-	 const double alf = 1;
-	 const double bet = 0;
-	 const double *alpha = &alf;
-	 const double *beta = &bet;
-	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_T, m, n, k, alpha,
-			a, lda, b, ldb, beta, c, ldc);
+	const double alf = 1;
+	const double bet = 0;
+	const double *alpha = &alf;
+	const double *beta = &bet;
+	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_T, m, n, k,
+			alpha, a, lda, b, ldb, beta, c, ldc);
 
 	cublasDestroy(handle);
 	return ret;
@@ -271,9 +271,7 @@ void matrix_multiplication_abft() {
 	//2d grid for abft operations
 
 	long blocks_abft_first = ceil((lin_a + 1) / float(BLOCK_SIZE));
-	long threads_abft_first = ceil((col_a + 1) / float(blocks_abft_first));
-	dim3 gridDimABFT_1st(blocks_abft_first, blocks_abft_first);
-	dim3 blockDimABFT_1st(threads_abft_first, threads_abft_first);
+	long threads_abft_first = ceil((lin_a + 1) / float(blocks_abft_first));
 
 	//second
 	long blocks_abft_second = ceil((col_b + 1) / float(BLOCK_SIZE));
@@ -281,10 +279,12 @@ void matrix_multiplication_abft() {
 	dim3 gridDimABFT_2nd(blocks_abft_second, blocks_abft_second);
 	dim3 blockDimABFT_2nd(threads_abft_second, threads_abft_second);
 
-	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first, threads_abft_first);
-	printf("blocks_abft_second %ld threads_abft_second %ld\n", blocks_abft_second, threads_abft_second);
-	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a + 1,
-			col_a + 1);
+	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first,
+			threads_abft_first);
+	printf("blocks_abft_second %ld threads_abft_second %ld\n",
+			blocks_abft_second, threads_abft_second);
+	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
+			lin_a + 1, col_a + 1);
 //	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
 //			col_b + 1);
 
