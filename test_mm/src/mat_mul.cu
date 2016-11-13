@@ -81,13 +81,14 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 	//first I calculate the checksum values
 	//printf("i %ld i mod rows_a %ld\n", i, i %rows_a);
 	if(((i + 1) % rows_a == 0) && (i > 0)){
-		printf("passou dentro i %ld rows %ld\n", rows_a);
 		//iterate on j dimension
 		long k;
 		double acc = 0;
 		for (k = 0; k < rows_a; k++) {
 			acc += a[k * cols_a_rows_b + j];
 		}
+
+		printf("passou dentro acc %lf rows_a * cols_a_rows_b + j %ld\n",acc, rows_a * cols_a_rows_b + j);
 
 		a[rows_a * cols_a_rows_b + j] = acc;
 	}
