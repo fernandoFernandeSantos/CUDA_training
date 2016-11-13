@@ -126,7 +126,7 @@ __global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b)
 	}
 
 	if(((i + 1) % rows_b_cols_a == 0) && (i > 0)){
-		b[rows_b_cols_a * collums_b + j] = 0;
+		b[(rows_b_cols_a - 1) * collums_b + j] = 0;
 	}
 }
 
