@@ -238,11 +238,11 @@ cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b,
 }
 
 void matrix_multiplication_abft() {
-	long size = 10;
-	long lin_a = 10;
-	long col_a = 20;
+//	long size = 10;
+	long lin_a = 20;
+	long col_a = 10;
 	long lin_b = col_a;
-	long col_b = 15;
+	long col_b = 20;
 	long vec_siz_a = ((lin_a + 1) * (col_a + 1));
 	long vec_siz_b = ((lin_b + 1) * (col_b + 1));
 	long vec_siz_c = ((lin_a + 1) * (col_b + 1));
@@ -272,13 +272,13 @@ void matrix_multiplication_abft() {
 	//kernel parameters
 	//we know that each block has 1024 threads
 	//these vars are for mat multplication,
-	long blocks = ceil(size / float(BLOCK_SIZE));
-	long threads = ceil(size / float(blocks));
+//	long blocks = ceil(size / float(BLOCK_SIZE));
+//	long threads = ceil(size / float(blocks));
 
-	//2d grid
-	dim3 gridDim(blocks, blocks);
-	//threads num, 2d
-	dim3 blockDim(threads, threads);
+//	//2d grid
+//	dim3 gridDim(blocks, blocks);
+//	//threads num, 2d
+//	dim3 blockDim(threads, threads);
 
 	//2d grid for abft operations
 
@@ -307,7 +307,7 @@ void matrix_multiplication_abft() {
 //	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 //			device_array_b, col_b);
 	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
-	printf("\nblocks %ld threads %ld\n", blocks, threads);
+//	printf("\nblocks %ld threads %ld\n", blocks, threads);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
 	printf("compare matrices\n");
