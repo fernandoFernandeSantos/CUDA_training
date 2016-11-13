@@ -80,8 +80,8 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 	//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
 	//first I calculate the checksum values
 	//printf("i %ld i mod rows_a %ld\n", i, i %rows_a);
-	if(((i + 1) % rows_a == 0) && (i > 0)){
-		printf("passou dentro i %ld rows %ld\n", rows_a);
+	if((i% rows_a == 0) && (i > 0)){
+		//printf("passou dentro i %ld rows %ld\n", rows_a);
 		//iterate on j dimension
 		long k;
 		double acc = 0;
@@ -364,10 +364,10 @@ void matrix_multiplication_abft() {
 
 	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first, threads_abft_first);
 	printf("blocks_abft_second %ld threads_abft_second %ld\n", blocks_abft_second, threads_abft_second);
-	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a,
-			col_a);
-	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b,
-			col_b);
+	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a + 1,
+			col_a + 1);
+	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
+			col_b + 1);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
