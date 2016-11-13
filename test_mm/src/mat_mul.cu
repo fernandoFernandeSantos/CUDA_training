@@ -161,7 +161,7 @@ void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
 	for(i = 0; i < m; i++){
 
 		for(j = 0; j < n; j++){
-			printf("%ld ",mat[i * m + j]);
+			printf("%lf ",mat[i * m + j]);
 		}
 		//printf("\n");
 	}
@@ -179,7 +179,7 @@ void fill_mat_mn(double *t, long m, long n){
 	long i,j;
 	for(i = 0; i < m; i++)
 		for(j = 0; j < n; j++)
-			t[i*m + j] = i + j;
+			t[i*m + j] = double(i + j);
 }
 void compare(double *t, double *s, long siz) {
 	long i;
@@ -190,121 +190,6 @@ void compare(double *t, double *s, long siz) {
 	}
 }
 
-int gemm_ongpu_abft(double *a, double *b, double *c, long lin_a, long col_a,
-		long lin_b, long col_b) {
-	long i, j;
-	double acc = 0;
-	int ret = 0;
-	long col_c = col_b;
-//	long lin_c = lin_a;
-	//first ABRAHAM operation
-	for (j = 0; j < col_a; j++) {
-		acc = 0;
-		for (i = 0; i < lin_a; i++)
-
-			acc += a[i * col_a + j];
-
-		a[lin_a * col_a + j] = acc;
-	}
-
-	//second ABRAHAM operation
-	for (i = 0; i < lin_b; i++) {
-		acc = 0;
-		for (j = 0; j < col_b; j++)
-			acc += b[i * (col_b + 1) + j];
-		//printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
-		b[i * (col_b + 1) + col_b] = acc;
-	}
-
-	//print_mat(a, lin_a + 1, col_a);
-	//printf("\n");
-	//print_mat(b, lin_b, col_b + 1);
-	//performs matrix multiplication
-	gemm_1d(a, b, c, lin_a + 1, col_a, lin_b, col_b + 1, col_b + 1, lin_a + 1);
-
-	//check all checksums
-	//line checksum
-	for (j = 0; j < col_a; j++) {
-		acc = 0;
-		for (i = 0; i < lin_a; i++)
-			acc += c[i * col_c + j];
-
-		if (fabs(c[lin_a * col_c + j]) - fabs(acc) >= MAX_THRESHOLD) {
-//			printf(
-//					"lin - position corrupted [%ld][%ld] - exp chsum %lf got chsum %lf diff - %lf\n",
-//					lin_a, j, c[lin_a * col_c + j], acc,
-//					c[lin_a * col_c + j] - acc);
-			ret++;
-		}
-	}
-
-	//collum checksum
-	for (i = 0; i < lin_b; i++) {
-		acc = 0;
-		for (j = 0; j < col_b; j++)
-			acc += c[i * col_c + j];
-
-		if (fabs(c[i * col_c + col_b] - acc) >= MAX_THRESHOLD) {
-//			printf(
-//					"collum - position corrupted [%ld][%ld] - exp chsum %lf got chsum %lf diff %lf\n",
-//					i, col_b, c[i * col_c + col_b], acc,
-//					c[i * col_c + col_b] - acc);
-			ret++;
-		}
-	}
-	return ret;
-
-}
-
-void matrix_multiplication_no_abft() {
-	const long siz_a = VECTOR_SIZE_A * sizeof(double);
-	const long siz_b = VECTOR_SIZE_B * sizeof(double);
-	const long siz_c = VECTOR_SIZE_C * sizeof(double);
-	//host memories
-	double* host_array_a = (double*) calloc(VECTOR_SIZE_A, sizeof(double));
-	double* host_array_b = (double*) calloc(VECTOR_SIZE_B, sizeof(double));
-	double* host_array_c = (double*) calloc(VECTOR_SIZE_C, sizeof(double));
-	double* host_array_c_temp = (double*) calloc(VECTOR_SIZE_C, sizeof(double));
-	fill_mat(host_array_a, VECTOR_SIZE_A);
-	fill_mat(host_array_b, VECTOR_SIZE_B);
-	//print_mat(host_array_a, COLLUMS_A, ROWS_A, "matrix A");
-	printf("\n");
-	//print_mat(host_array_b, COLLUMS_B, ROWS_B, "matrix B");
-	//perform host matrix multiplication
-	//	gemm_1d(host_array_a, host_array_b, host_array_c_temp, ROWS_A, COLLUMS_A,
-	//			ROWS_B, COLLUMS_B, ROWS_A, COLLUMS_B);
-	//print_mat(host_array_c_temp, COLLUMS_B, ROWS_A, "matrix C temp");
-	//cuda memories
-	double *device_array_a, *device_array_b, *device_array_c;
-	cudaMalloc(&device_array_a, siz_a);
-	cudaMalloc(&device_array_b, siz_b);
-	cudaMalloc(&device_array_c, siz_c);
-	//copy to device
-	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
-	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
-	//kernel parameters
-	//we know that each block has 1024 threads
-	long blocks = ceil(N / float(BLOCK_SIZE));
-	long threads = ceil(N / float(blocks));
-	//2d grid
-	dim3 gridDim(blocks, blocks);
-	//threads num, 2d
-	dim3 blockDim(threads, threads);
-	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
-			device_array_b, N);
-	printf("\nblocks %ld threads %ld\n", blocks, threads);
-	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	//print_mat(host_array_c, COLLUMS_A, ROWS_A, "GPU result mat");
-	printf("compare matrices\n");
-	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
-	cudaFree(device_array_a);
-	cudaFree(device_array_b);
-	cudaFree(device_array_c);
-	free(host_array_a);
-	free(host_array_b);
-	free(host_array_c);
-	free(host_array_c_temp);
-}
 
 //emm(cublasHandle_t handle,
 //                           cublasOperation_t transa, cublasOperation_t transb,
@@ -424,3 +309,119 @@ int main(void) {
 	matrix_multiplication_abft();
 	return 0;
 }
+//
+//int gemm_ongpu_abft(double *a, double *b, double *c, long lin_a, long col_a,
+//		long lin_b, long col_b) {
+//	long i, j;
+//	double acc = 0;
+//	int ret = 0;
+//	long col_c = col_b;
+////	long lin_c = lin_a;
+//	//first ABRAHAM operation
+//	for (j = 0; j < col_a; j++) {
+//		acc = 0;
+//		for (i = 0; i < lin_a; i++)
+//
+//			acc += a[i * col_a + j];
+//
+//		a[lin_a * col_a + j] = acc;
+//	}
+//
+//	//second ABRAHAM operation
+//	for (i = 0; i < lin_b; i++) {
+//		acc = 0;
+//		for (j = 0; j < col_b; j++)
+//			acc += b[i * (col_b + 1) + j];
+//		//printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
+//		b[i * (col_b + 1) + col_b] = acc;
+//	}
+//
+//	//print_mat(a, lin_a + 1, col_a);
+//	//printf("\n");
+//	//print_mat(b, lin_b, col_b + 1);
+//	//performs matrix multiplication
+//	gemm_1d(a, b, c, lin_a + 1, col_a, lin_b, col_b + 1, col_b + 1, lin_a + 1);
+//
+//	//check all checksums
+//	//line checksum
+//	for (j = 0; j < col_a; j++) {
+//		acc = 0;
+//		for (i = 0; i < lin_a; i++)
+//			acc += c[i * col_c + j];
+//
+//		if (fabs(c[lin_a * col_c + j]) - fabs(acc) >= MAX_THRESHOLD) {
+////			printf(
+////					"lin - position corrupted [%ld][%ld] - exp chsum %lf got chsum %lf diff - %lf\n",
+////					lin_a, j, c[lin_a * col_c + j], acc,
+////					c[lin_a * col_c + j] - acc);
+//			ret++;
+//		}
+//	}
+//
+//	//collum checksum
+//	for (i = 0; i < lin_b; i++) {
+//		acc = 0;
+//		for (j = 0; j < col_b; j++)
+//			acc += c[i * col_c + j];
+//
+//		if (fabs(c[i * col_c + col_b] - acc) >= MAX_THRESHOLD) {
+////			printf(
+////					"collum - position corrupted [%ld][%ld] - exp chsum %lf got chsum %lf diff %lf\n",
+////					i, col_b, c[i * col_c + col_b], acc,
+////					c[i * col_c + col_b] - acc);
+//			ret++;
+//		}
+//	}
+//	return ret;
+//
+//}
+//
+//void matrix_multiplication_no_abft() {
+//	const long siz_a = VECTOR_SIZE_A * sizeof(double);
+//	const long siz_b = VECTOR_SIZE_B * sizeof(double);
+//	const long siz_c = VECTOR_SIZE_C * sizeof(double);
+//	//host memories
+//	double* host_array_a = (double*) calloc(VECTOR_SIZE_A, sizeof(double));
+//	double* host_array_b = (double*) calloc(VECTOR_SIZE_B, sizeof(double));
+//	double* host_array_c = (double*) calloc(VECTOR_SIZE_C, sizeof(double));
+//	double* host_array_c_temp = (double*) calloc(VECTOR_SIZE_C, sizeof(double));
+//	fill_mat(host_array_a, VECTOR_SIZE_A);
+//	fill_mat(host_array_b, VECTOR_SIZE_B);
+//	//print_mat(host_array_a, COLLUMS_A, ROWS_A, "matrix A");
+//	printf("\n");
+//	//print_mat(host_array_b, COLLUMS_B, ROWS_B, "matrix B");
+//	//perform host matrix multiplication
+//	//	gemm_1d(host_array_a, host_array_b, host_array_c_temp, ROWS_A, COLLUMS_A,
+//	//			ROWS_B, COLLUMS_B, ROWS_A, COLLUMS_B);
+//	//print_mat(host_array_c_temp, COLLUMS_B, ROWS_A, "matrix C temp");
+//	//cuda memories
+//	double *device_array_a, *device_array_b, *device_array_c;
+//	cudaMalloc(&device_array_a, siz_a);
+//	cudaMalloc(&device_array_b, siz_b);
+//	cudaMalloc(&device_array_c, siz_c);
+//	//copy to device
+//	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
+//	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
+//	//kernel parameters
+//	//we know that each block has 1024 threads
+//	long blocks = ceil(N / float(BLOCK_SIZE));
+//	long threads = ceil(N / float(blocks));
+//	//2d grid
+//	dim3 gridDim(blocks, blocks);
+//	//threads num, 2d
+//	dim3 blockDim(threads, threads);
+//	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
+//			device_array_b, N);
+//	printf("\nblocks %ld threads %ld\n", blocks, threads);
+//	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
+//	//print_mat(host_array_c, COLLUMS_A, ROWS_A, "GPU result mat");
+//	printf("compare matrices\n");
+//	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
+//	cudaFree(device_array_a);
+//	cudaFree(device_array_b);
+//	cudaFree(device_array_c);
+//	free(host_array_a);
+//	free(host_array_b);
+//	free(host_array_c);
+//	free(host_array_c_temp);
+//}
