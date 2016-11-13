@@ -78,8 +78,8 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
 //	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
-	//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
-	//first I calculate the checksum values
+//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
+//first I calculate the checksum values
 //	if(((i + 1) % rows_a == 0) && (i > 0)){
 //		//iterate on j dimension
 	long k;
@@ -112,22 +112,34 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 __global__ void second_abraham_op(double *b, long rows_b_cols_a,
 		long collums_b) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	long i = blockIdx.y * blockDim.y + threadIdx.y;
+//	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
-	//printf("j %ld rows_b %ld j mod rows %ld\n", j, rows_b_cols_a, j % rows_b_cols_a);
-	if (((j + 1) % rows_b_cols_a == 0) && (j > 0)) {
-		long k;
-		double acc = 0;
-		for (k = 0; k < collums_b; k++) {
-			acc += b[j * collums_b + k];
-		}
-		//printf("dentro acc %lf j * collums_b + collums_b %ld\n", acc, j * collums_b + collums_b);
-		b[(collums_b - 1) * collums_b + i] = acc;
+//	//printf("j %ld rows_b %ld j mod rows %ld\n", j, rows_b_cols_a, j % rows_b_cols_a);
+//	if (((j + 1) % rows_b_cols_a == 0) && (j > 0)) {
+	long k;
+	double acc = 0;
+	for (k = 0; k < collums_b; k++) {
+		acc += b[j * collums_b + k];
 	}
+	//printf("dentro acc %lf j * collums_b + collums_b %ld\n", acc, j * collums_b + collums_b);
+	b[(collums_b - 1) * collums_b + j] = acc;
+//	}
 
 //	if(((i + 1) % rows_b_cols_a == 0) && (i > 0)){
 //		b[(rows_b_cols_a - 1) * collums_b + j] = 0;
 //	}
+}
+
+__global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
+		char op) {
+	long p = blockIdx.x * blockDim.x + threadIdx.x;
+	//zero rows
+	if (op == 'r') {
+		//num is which row/collum must be set to zero, 2, 3 ... or n
+		mat[p * rows + num] = 0;
+	} else {
+		mat[rows * num + p] = 0;
+	}
 }
 
 __global__ void mat_mult(double *dst, double *a, double *b, long col) {
@@ -274,17 +286,16 @@ void matrix_multiplication_abft() {
 	long threads_abft_first = ceil((col_a + 1) / float(blocks_abft_first));
 
 	//second
-	long blocks_abft_second = ceil((col_b + 1) / float(BLOCK_SIZE));
+	long blocks_abft_second = ceil((lin_b + 1) / float(BLOCK_SIZE));
 	long threads_abft_second = ceil((lin_b + 1) / float(blocks_abft_second));
-	dim3 gridDimABFT_2nd(blocks_abft_second, blocks_abft_second);
-	dim3 blockDimABFT_2nd(threads_abft_second, threads_abft_second);
+
 
 	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first,
 			threads_abft_first);
 	printf("blocks_abft_second %ld threads_abft_second %ld\n",
 			blocks_abft_second, threads_abft_second);
-	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
-			lin_a + 1, col_a + 1);
+//	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
+//			lin_a + 1, col_a + 1);
 //	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
 //			col_b + 1);
 
@@ -295,7 +306,7 @@ void matrix_multiplication_abft() {
 	print_mat_collum_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 //	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 //			device_array_b, col_b);
-//	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
+	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
 	printf("\nblocks %ld threads %ld\n", blocks, threads);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
