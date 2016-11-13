@@ -310,7 +310,7 @@ cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b, double *c) 
 	 const double *alpha = &alf;
 	 const double *beta = &bet;
 	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_T, m, n, k, alpha,
-			b, lda, a, ldb, beta, c, ldc);
+			a, lda, b, ldb, beta, c, ldc);
 
 	cublasDestroy(handle);
 	return ret;
@@ -318,8 +318,8 @@ cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b, double *c) 
 
 void matrix_multiplication_abft() {
 	long size = 10;
-	long lin_a = 20;
-	long col_a = 15;
+	long lin_a = 10;
+	long col_a = 10;
 	long lin_b = col_a;
 	long col_b = 10;
 	long vec_siz_a = ((lin_a + 1) * (col_a + 1));
