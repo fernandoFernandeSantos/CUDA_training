@@ -185,7 +185,6 @@ void fill_mat_mn(double *t, long m, long n){
 	long i,j;
 	for(i = 0; i < m; i++)
 		for(j = 0; j < n; j++)
-			if(i == j)
 				t[j*m + i] = double(i);
 }
 void compare(double *t, double *s, long siz) {
@@ -302,19 +301,14 @@ void matrix_multiplication_abft() {
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
 	printf("compare matrices\n");
 	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
+	free(host_array_a);
+	free(host_array_b);
+	free(host_array_c);
+	free(host_array_c_temp);
+
 	cudaFree(device_array_a);
 	cudaFree(device_array_b);
 	cudaFree(device_array_c);
-	free(host_array_a);
-	printf("problem with host arrays a\n");
-
-	free(host_array_b);
-	printf("problem with host arrays b\n");
-
-	free(host_array_c);
-	printf("problem with host arrays c\n");
-
-	free(host_array_c_temp);
 }
 
 int main(void) {
