@@ -158,10 +158,10 @@ void print_mat_row_major(double *mat, long m, long n, const char *mat_name) {
 void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
 	printf("COLLUM-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
 	long i, j;
-	for(i = 0; i < n; i++){
+	for(i = 0; i < m; i++){
 
-		for(j = 0; j < m; j++){
-			printf("i,j [%ld,%ld] i * m + j %ld \n",i,j, i * m + j);
+		for(j = 0; j < n; j++){
+			printf("%ld ",mat[i * m + j]);
 		}
 		//printf("\n");
 	}
