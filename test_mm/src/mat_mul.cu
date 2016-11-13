@@ -115,7 +115,7 @@ __global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b)
 	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
 	//printf("j %ld rows_b %ld j mod rows %ld\n", j, rows_b_cols_a, j % rows_b_cols_a);
-	if(((j + 1) % rows_b_cols_a) && (j > 0)){
+	if(((j + 1) % rows_b_cols_a == 0) && (j > 0)){
 		printf("j %ld rows_b %ld j mod rows %ld\n", j, rows_b_cols_a, j % rows_b_cols_a);
 		long k;
 		double acc = 0;
