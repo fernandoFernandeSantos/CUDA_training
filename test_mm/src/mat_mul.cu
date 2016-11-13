@@ -18,6 +18,7 @@
 #define VECTOR_SIZE_C ROWS_A * COLLUMS_B
 
 #define MAX_THRESHOLD  0.0001
+#define PRINT_TYPE long
 
 int gemm(double** a, double** b, double** c, long lin_a, long col_a, long lin_b,
 		long col_b) {
@@ -79,7 +80,6 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 
 	//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
 	//first I calculate the checksum values
-	//printf("i %ld i mod rows_a %ld\n", i, i %rows_a);
 	if(((i + 1) % rows_a == 0) && (i > 0)){
 		//iterate on j dimension
 		long k;
@@ -90,14 +90,13 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 
 //		printf("passou dentro acc %lf rows_a * cols_a_rows_b + j %ld\n",acc, (rows_a) * (cols_a_rows_b - 1) + j);
 
-		a[(rows_a - 1) * (cols_a_rows_b) + j] = acc;
+		a[(rows_a - 1) * j + (cols_a_rows_b)] = acc;
 	}
 	//so when I could add a extra line and collum, there will be a blanck collum for matrix A
-	if(((j + 1) % cols_a_rows_b == 0) && (j > 0)){
-		a[i * cols_a_rows_b + cols_a_rows_b - 1] = 0;
-		//printf("i %ld cols_a_rows_b + cols_a_rows_b %ld\n", i, cols_a_rows_b + cols_a_rows_b);
-
-	}
+//	if(((j + 1) % cols_a_rows_b == 0) && (j > 0)){
+//		a[i * cols_a_rows_b + cols_a_rows_b - 1] = 0;
+//
+//	}
 
 }
 
@@ -122,12 +121,12 @@ __global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b)
 			acc += b[j * collums_b + k];
 		}
 		//printf("dentro acc %lf j * collums_b + collums_b %ld\n", acc, j * collums_b + collums_b);
-		b[i * collums_b + collums_b - 1] = acc;
+		b[(collums_b - 1) * collums_b + i] = acc;
 	}
 
-	if(((i + 1) % rows_b_cols_a == 0) && (i > 0)){
-		b[(rows_b_cols_a - 1) * collums_b + j] = 0;
-	}
+//	if(((i + 1) % rows_b_cols_a == 0) && (i > 0)){
+//		b[(rows_b_cols_a - 1) * collums_b + j] = 0;
+//	}
 }
 
 __global__ void mat_mult(double *dst, double *a, double *b, long col) {
@@ -146,20 +145,31 @@ __global__ void mat_mult(double *dst, double *a, double *b, long col) {
 	dst[index_dst] = acc;
 }
 
-void print_mat(double *mat, long m, long n, const char *mat_name) {
-	printf("printing %s lin %ld col %ld\n", mat_name, m, n);
+void print_mat_row_major(double *mat, long m, long n, const char *mat_name) {
+	printf("ROW-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
 	long i, j;
 	for (i = 0; i < m; i++) {
 		for (j = 0; j < n; j++)
-			printf("%ld ", (long) mat[i * n + j]);
+			printf("%ld ", (PRINT_TYPE) mat[i * n + j]);
 		printf("\n");
+	}
+}
+
+void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
+	printf("COLLUM-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
+	long i, j;
+	for(j = 0; j < n; j++){
+
+		for(i = 0; i < m; i++){
+			printf("%ld ", (PRINT_TYPE) mat[i * n + j]);
+		}
 	}
 }
 
 void fill_mat(double* t, long n) {
 	long i;
 	for (i = 0; i < n; i++) {
-		t[i] = 1;
+		t[i] = i;
 	}
 }
 
@@ -381,15 +391,15 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat(host_array_a, lin_a + 1, col_a + 1, "matrix A");
+	print_mat_row_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
 	printf("\n");
-	print_mat(host_array_b, lin_b + 1, col_b + 1, "matrix B");
+	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 //	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 //			device_array_b, col_b);
 	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
 	printf("\nblocks %ld threads %ld\n", blocks, threads);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
+	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
 	printf("compare matrices\n");
 	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
 	cudaFree(device_array_a);
