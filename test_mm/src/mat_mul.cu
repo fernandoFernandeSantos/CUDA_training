@@ -161,7 +161,7 @@ void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
 	for(i = 0; i < m; i++){
 
 		for(j = 0; j < n; j++){
-			printf("%ld ",(PRINT_TYPE)mat[j*n + i]);
+			printf("%ld ",(PRINT_TYPE)mat[j*m + i]);
 		}
 		printf("\n");
 	}
@@ -186,7 +186,7 @@ void fill_mat_mn(double *t, long m, long n){
 	for(i = 0; i < m; i++)
 		for(j = 0; j < n; j++)
 			if(i == j)
-				t[j*n + i] = double(i);
+				t[j*m + i] = double(i);
 }
 void compare(double *t, double *s, long siz) {
 	long i;
@@ -229,9 +229,9 @@ cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b, double *c) 
 void matrix_multiplication_abft() {
 	long size = 10;
 	long lin_a = 10;
-	long col_a = 3;
+	long col_a = 20;
 	long lin_b = col_a;
-	long col_b = 6;
+	long col_b = 15;
 	long vec_siz_a = ((lin_a + 1) * (col_a + 1));
 	long vec_siz_b = ((lin_b + 1) * (col_b + 1));
 	long vec_siz_c = ((lin_a + 1) * (col_b + 1));
@@ -284,8 +284,8 @@ void matrix_multiplication_abft() {
 
 	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first, threads_abft_first);
 	printf("blocks_abft_second %ld threads_abft_second %ld\n", blocks_abft_second, threads_abft_second);
-	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a + 1,
-			col_a + 1);
+//	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a + 1,
+//			col_a + 1);
 //	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
 //			col_b + 1);
 
