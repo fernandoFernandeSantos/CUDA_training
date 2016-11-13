@@ -360,7 +360,8 @@ void matrix_multiplication_abft() {
 	dim3 gridDimABFT_2nd(blocks_abft_second, blocks_abft_second);
 	dim3 blockDimABFT_2nd(threads_abft_second, threads_abft_second);
 
-
+	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first, threads_abft_first);
+	printf("blocks_abft_second %ld threads_abft_second %ld\n", blocks_abft_second, threads_abft_second);
 	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a,
 			col_a);
 	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b,
