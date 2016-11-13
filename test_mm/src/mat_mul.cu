@@ -163,6 +163,7 @@ void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
 		for(i = 0; i < m; i++){
 			printf("%ld ", (PRINT_TYPE) mat[i * n + j]);
 		}
+		printf("\n");
 	}
 }
 
