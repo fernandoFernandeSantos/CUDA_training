@@ -303,8 +303,11 @@ void matrix_multiplication_abft() {
 	printf("compare matrices\n");
 	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
 	cudaFree(device_array_a);
+	printf("passou a\n");
 	cudaFree(device_array_b);
+	printf("passou array b\n");
 	cudaFree(device_array_c);
+	printf("problem with host arrays\n");
 	free(host_array_a);
 	free(host_array_b);
 	free(host_array_c);
