@@ -368,9 +368,9 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat(host_array_a, lin_a + 1, col_a, "matrix A");
+	print_mat(host_array_a, lin_a + 1, col_a + 1, "matrix A");
 	printf("\n");
-	print_mat(host_array_b, lin_b, col_b + 1, "matrix B");
+	print_mat(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 //	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 //			device_array_b, col_b);
 	//dgemm_host(lin_a,col_b,col_a, device_array_a, device_array_b, device_array_c);
@@ -389,22 +389,6 @@ void matrix_multiplication_abft() {
 }
 
 int main(void) {
-//	long m_a = 15;
-//	long n_a = 10;
-//	long m_b = n_a;
-//	long n_b = 12;
-//	double a[(m_a + 1) * n_a], b[m_a * (n_a + 1)], c[(m_a + 1) * (n_b + 1)];
-//
-//	fill_mat(a, (m_a + 1) * n_a);
-//	fill_mat(b, m_b * (n_b + 1));
-//
-////	print_mat(a, m_a + 1,  n_a,  "matrix a");
-////	print_mat(b, m_b, n_b + 1, "matrix b");
-//
-//	gemm_ongpu_abft(a, b, c, m_a, n_a, m_b, n_b);
-//	print_mat(a, m_a + 1,  n_a,  "matrix a");
-//	print_mat(b, m_b, n_b + 1, "matrix b");
-//	print_mat(c, m_a + 1, n_b + 1, "matrix c");
 
 	matrix_multiplication_abft();
 	return 0;
