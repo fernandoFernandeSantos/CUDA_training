@@ -174,6 +174,13 @@ void fill_mat(double* t, long n) {
 	}
 }
 
+
+void fill_mat_mn(double *t, long m, long n){
+	long i,j;
+	for(i = 0; i < m; i++)
+		for(j = 0; j < n; j++)
+			t[i*m + j] = i + j;
+}
 void compare(double *t, double *s, long siz) {
 	long i;
 	for (i = 0; i < siz; i++) {
@@ -344,8 +351,8 @@ void matrix_multiplication_abft() {
 	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
 	double* host_array_c = (double*) calloc(vec_siz_c, sizeof(double));
 	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
-	fill_mat(host_array_a, vec_siz_a);
-	fill_mat(host_array_b, vec_siz_b);
+	fill_mat_mn(host_array_a, lin_a + 1, col_a + 1);
+	fill_mat_mn(host_array_b, lin_b + 1, col_b + 1);
 
 	//perform host matrix multiplication
 	//	gemm_1d(host_array_a, host_array_b, host_array_c_temp, ROWS_A, COLLUMS_A,
