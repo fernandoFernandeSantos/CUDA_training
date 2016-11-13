@@ -79,8 +79,8 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 
 	//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
 	//first I calculate the checksum values
-	//printf("i %ld i mod rows_a %ld\n", i, i %rows_a);
-	if((i% rows_a == 0) && (i > 0)){
+	printf("i %ld i mod rows_a %ld\n", i, i %rows_a);
+	if(((i + 1) % rows_a == 0) && (i > 0)){
 		//printf("passou dentro i %ld rows %ld\n", rows_a);
 		//iterate on j dimension
 		long k;
@@ -115,10 +115,10 @@ __global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b)
 		long k;
 		double acc = 0;
 		for (k = 0; k < collums_b; k++) {
-			acc += b[j * (collums_b + 1) + k];
+			acc += b[j * collums_b + k];
 		}
 
-		b[j * (collums_b + 1) + collums_b] = acc;
+		b[j * collums_b + collums_b] = acc;
 	}
 
 	if((i % rows_b_cols_a) && (i > 0)){
