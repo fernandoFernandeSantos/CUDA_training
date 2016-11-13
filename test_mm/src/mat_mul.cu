@@ -90,7 +90,7 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 		printf("acc %lf on pos %d\n", acc, rows_a * j + rows_a);
 //		printf("passou dentro acc %lf rows_a * cols_a_rows_b + j %ld\n",acc, (rows_a) * (cols_a_rows_b - 1) + j);
 
-		a[(rows_a) * j + rows_a] = acc;
+		a[(rows_a) * j + rows_a - 1] = acc;
 	}
 	//so when I could add a extra line and collum, there will be a blanck collum for matrix A
 //	if(((j + 1) % cols_a_rows_b == 0) && (j > 0)){
@@ -312,7 +312,6 @@ void matrix_multiplication_abft() {
 }
 
 int main(void) {
-
 	matrix_multiplication_abft();
 	return 0;
 }
