@@ -270,8 +270,8 @@ void matrix_multiplication_abft() {
 
 	//2d grid for abft operations
 
-	long blocks_abft_first = ceil((lin_a + 1) / float(BLOCK_SIZE));
-	long threads_abft_first = ceil((lin_a + 1) / float(blocks_abft_first));
+	long blocks_abft_first = ceil((col_a + 1) / float(BLOCK_SIZE));
+	long threads_abft_first = ceil((col_a + 1) / float(blocks_abft_first));
 
 	//second
 	long blocks_abft_second = ceil((col_b + 1) / float(BLOCK_SIZE));
