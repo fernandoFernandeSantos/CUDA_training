@@ -72,16 +72,28 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 //
 //        a[lin_a * col_a + j] = acc;
 //	}
-__global__ void first_abraham_op(double *a, long collums, long rows) {
+//rows_b MUST BE THE SAME OF cols_a
+__global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	//iterate on j dimension
-	long i;
-	double acc = 0;
-	for (i = 0; i < rows; i++) {
-		acc += a[i * collums + j];
+	long i = blockIdx.y * blockDim.y + threadIdx.y;
+
+	//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
+	//first I calculate the checksum values
+	if((i % rows_a == 0) && (i > 0)){
+		//iterate on j dimension
+		long k;
+		double acc = 0;
+		for (k = 0; k < rows_a; k++) {
+			acc += a[k * cols_a_rows_b + j];
+		}
+
+		a[rows_a * cols_a_rows_b + j] = acc;
+	}
+	//so when I could add a extra line and collum, there will be a blanck collum for matrix A
+	if((j % cols_a_rows_b == 0) && (j > 0)){
+		a[i * cols_a_rows_b + cols_a_rows_b] = 0;
 	}
 
-	a[rows * collums + j] = acc;
 }
 
 /**
@@ -93,16 +105,23 @@ __global__ void first_abraham_op(double *a, long collums, long rows) {
  b[i * (col_b + 1) + col_b] = acc;
  }
  */
-__global__ void second_abraham_op(double *b, long collums, long rows) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	long j;
-	double acc = 0;
-	for (j = 0; j < collums; j++) {
-		acc += b[i * (collums + 1) + j];
+__global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b) {
+	long j = blockIdx.x * blockDim.x + threadIdx.x;
+	long i = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if((j % rows_b_cols_a) && (j > 0)){
+		long k;
+		double acc = 0;
+		for (k = 0; k < collums_b; k++) {
+			acc += b[j * (collums_b + 1) + k];
+		}
+
+		b[j * (collums_b + 1) + collums_b] = acc;
 	}
 
-	b[i * (collums + 1) + collums] = acc;
-
+	if((i % rows_b_cols_a) && (i > 0)){
+		b[rows_b_cols_a * collums_b + j] = 0;
+	}
 }
 
 __global__ void mat_mult(double *dst, double *a, double *b, long col) {
@@ -291,8 +310,8 @@ void matrix_multiplication_abft() {
 	long col_a = 10;
 	long lin_b = col_a;
 	long col_b = 10;
-	long vec_siz_a = ((lin_a + 1) * col_a);
-	long vec_siz_b = (lin_b * (col_b + 1));
+	long vec_siz_a = ((lin_a + 1) * (col_a + 1));
+	long vec_siz_b = ((lin_b + 1) * (col_b + 1));
 	long vec_siz_c = ((lin_a + 1) * (col_b + 1));
 	const long siz_a = vec_siz_a * sizeof(double);
 	const long siz_b = vec_siz_b * sizeof(double);
@@ -328,14 +347,25 @@ void matrix_multiplication_abft() {
 	//threads num, 2d
 	dim3 blockDim(threads, threads);
 
-	//1d grid for abft operations
-	long threads_abft_first = ceil(lin_a / float(blocks));
-	long threads_abft_second = ceil(col_b / float(blocks));
+	//2d grid for abft operations
 
-	first_abraham_op<<<blocks, threads_abft_first>>>(device_array_a, lin_a,
+	long blocks_abft_first = ceil(lin_a / float(BLOCK_SIZE));
+	long threads_abft_first = ceil(col_a / float(blocks_abft_first));
+	dim3 gridDimABFT_1st(blocks_abft_first, blocks_abft_first);
+	dim3 blockDimABFT_1st(threads_abft_first, threads_abft_first);
+
+	//second
+	long blocks_abft_second = ceil(lin_b / float(BLOCK_SIZE));
+	long threads_abft_second = ceil(col_b / float(blocks_abft_second));
+	dim3 gridDimABFT_2nd(blocks_abft_second, blocks_abft_second);
+	dim3 blockDimABFT_2nd(threads_abft_second, threads_abft_second);
+
+
+	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a,
 			col_a);
-	second_abraham_op<<<blocks, threads_abft_second>>>(device_array_b, lin_b,
+	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b,
 			col_b);
+
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
 	print_mat(host_array_a, lin_a + 1, col_a, "matrix A");
@@ -343,7 +373,7 @@ void matrix_multiplication_abft() {
 	print_mat(host_array_b, lin_b, col_b + 1, "matrix B");
 //	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 //			device_array_b, col_b);
-	dgemm_host(lin_a,col_b,col_a, device_array_a, device_array_b, device_array_c);
+	//dgemm_host(lin_a,col_b,col_a, device_array_a, device_array_b, device_array_c);
 	printf("\nblocks %ld threads %ld\n", blocks, threads);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
