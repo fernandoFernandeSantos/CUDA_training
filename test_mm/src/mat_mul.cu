@@ -88,11 +88,12 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 			acc += a[k * cols_a_rows_b + j];
 		}
 
-		printf("passou dentro acc %lf rows_a * cols_a_rows_b + j %ld\n",acc, (rows_a) * (cols_a_rows_b - 1) + j);
+//		printf("passou dentro acc %lf rows_a * cols_a_rows_b + j %ld\n",acc, (rows_a) * (cols_a_rows_b - 1) + j);
 
-		a[(rows_a) * (cols_a_rows_b -1) + j] = acc;
+		a[(rows_a - 1) * (cols_a_rows_b) + j] = acc;
 	}
 	//so when I could add a extra line and collum, there will be a blanck collum for matrix A
+	printf("j %ld cols_a_rows_b %ld j % cols_a_rows_b %ld\n", j, cols_a_rows_b, j % cols_a_rows_b);
 	if((j % cols_a_rows_b == 0) && (j > 0)){
 		a[i * cols_a_rows_b + cols_a_rows_b] = 0;
 	}
