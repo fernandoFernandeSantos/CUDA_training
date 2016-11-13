@@ -305,11 +305,15 @@ cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b, double *c) 
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 	int lda = m, ldb = k, ldc = m;
-	printf("antes\n");
-	return cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, (double*) 1,
-			a, lda, b, ldb, (double*) 1, c, ldc);
-	printf("depois\n");
+	 const double alf = 1;
+	 const double bet = 0;
+	 const double *alpha = &alf;
+	 const double *beta = &bet;
+	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha,
+			a, lda, b, ldb, beta, c, ldc);
+
 	cublasDestroy(handle);
+	return ret;
 }
 
 void matrix_multiplication_abft() {
