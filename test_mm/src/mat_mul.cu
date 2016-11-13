@@ -169,7 +169,7 @@ void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
 void fill_mat(double* t, long n) {
 	long i;
 	for (i = 0; i < n; i++) {
-		t[i] = i;
+		t[i] = 1;
 	}
 }
 
