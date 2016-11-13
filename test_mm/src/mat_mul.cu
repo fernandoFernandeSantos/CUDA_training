@@ -121,11 +121,11 @@ __global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b)
 		for (k = 0; k < collums_b; k++) {
 			acc += b[j * collums_b + k];
 		}
-		printf("dentro acc %lf j * collums_b + collums_b %ld\n", acc, j * collums_b + collums_b);
+		//printf("dentro acc %lf j * collums_b + collums_b %ld\n", acc, j * collums_b + collums_b);
 		b[i * collums_b + collums_b - 1] = acc;
 	}
 
-	if((i % rows_b_cols_a) && (i > 0)){
+	if(((i + 1) % rows_b_cols_a == 0) && (i > 0)){
 		b[rows_b_cols_a * collums_b + j] = 0;
 	}
 }
