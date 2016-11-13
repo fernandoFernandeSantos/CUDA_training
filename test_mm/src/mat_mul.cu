@@ -84,7 +84,7 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 		//iterate on j dimension
 		long k;
 		double acc = 0;
-		for (k = 0; k < rows_a; k++) {
+		for (k = 0; k < rows_a - 1; k++) {
 			acc += a[j * rows_a + k];
 		}
 		printf("acc %lf on pos %d\n", acc, rows_a * j + rows_a);
