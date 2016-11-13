@@ -95,7 +95,7 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
 	//so when I could add a extra line and collum, there will be a blanck collum for matrix A
 	if(((j + 1) % cols_a_rows_b == 0) && (j > 0)){
 		a[i * cols_a_rows_b + cols_a_rows_b - 1] = 0;
-		printf("i %ld cols_a_rows_b + cols_a_rows_b %ld\n", i, cols_a_rows_b + cols_a_rows_b);
+		//printf("i %ld cols_a_rows_b + cols_a_rows_b %ld\n", i, cols_a_rows_b + cols_a_rows_b);
 
 	}
 
@@ -114,6 +114,7 @@ __global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b)
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
 	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
+	printf("j %ld rows_b %ld j mod rows\n", j, rows_b_cols_a, j % rows_b_cols_a);
 	if((j % rows_b_cols_a) && (j > 0)){
 		long k;
 		double acc = 0;
