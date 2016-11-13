@@ -122,7 +122,7 @@ __global__ void second_abraham_op(double *b, long rows_b_cols_a, long collums_b)
 			acc += b[j * collums_b + k];
 		}
 		printf("dentro acc %lf j * collums_b + collums_b %ld\n", acc, j * collums_b + collums_b);
-		b[j * collums_b + collums_b] = acc;
+		b[i * collums_b + collums_b] = acc;
 	}
 
 	if((i % rows_b_cols_a) && (i > 0)){
