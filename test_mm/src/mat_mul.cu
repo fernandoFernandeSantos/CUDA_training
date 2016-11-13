@@ -361,8 +361,8 @@ void matrix_multiplication_abft() {
 
 	//2d grid for abft operations
 
-	long blocks_abft_first = ceil((lin_a + 1) / float(BLOCK_SIZE));
-	long threads_abft_first = ceil((col_a + 1) / float(blocks_abft_first));
+	long blocks_abft_first = ceil((col_a + 1) / float(BLOCK_SIZE));
+	long threads_abft_first = ceil((lin_a + 1) / float(blocks_abft_first));
 	dim3 gridDimABFT_1st(blocks_abft_first, blocks_abft_first);
 	dim3 blockDimABFT_1st(threads_abft_first, threads_abft_first);
 
