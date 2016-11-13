@@ -161,10 +161,16 @@ void print_mat_collum_major(double *mat, long m, long n, const char *mat_name){
 	for(i = 0; i < m; i++){
 
 		for(j = 0; j < n; j++){
-			printf("%ld ", (PRINT_TYPE)mat[i * m + j]);
+			printf("%ld ",(PRINT_TYPE)mat[j*n + i]);
 		}
 		printf("\n");
 	}
+//	printf("on vector 1d\n");
+//	for(i = 0; i < m * n; i++){
+//		printf("%ld ", (PRINT_TYPE)mat[i]);
+//	}
+//	printf("\n");
+
 }
 
 void fill_mat(double* t, long n) {
@@ -179,7 +185,8 @@ void fill_mat_mn(double *t, long m, long n){
 	long i,j;
 	for(i = 0; i < m; i++)
 		for(j = 0; j < n; j++)
-			t[i*m + j] = double(i + j);
+			if(i == j)
+				t[j*n + i] = double(i);
 }
 void compare(double *t, double *s, long siz) {
 	long i;
@@ -277,10 +284,10 @@ void matrix_multiplication_abft() {
 
 	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first, threads_abft_first);
 	printf("blocks_abft_second %ld threads_abft_second %ld\n", blocks_abft_second, threads_abft_second);
-	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a + 1,
-			col_a + 1);
-	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
-			col_b + 1);
+//	first_abraham_op<<<gridDimABFT_1st, blockDimABFT_1st>>>(device_array_a, lin_a + 1,
+//			col_a + 1);
+//	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
+//			col_b + 1);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
