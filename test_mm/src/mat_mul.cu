@@ -265,8 +265,8 @@ void matrix_multiplication_abft() {
 	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
 	double* host_array_c = (double*) calloc(vec_siz_c, sizeof(double));
 	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
-	fill_mat_row_major(host_array_a, lin_a + 1, col_a + 1);
-	fill_mat_row_major(host_array_b, lin_b + 1, col_b + 1);
+	fill_mat_collum_major(host_array_a, lin_a + 1, col_a + 1);
+	fill_mat_collum_major(host_array_b, lin_b + 1, col_b + 1);
 
 	//cuda memories
 	double *device_array_a, *device_array_b, *device_array_c;
