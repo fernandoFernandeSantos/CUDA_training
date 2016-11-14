@@ -220,40 +220,29 @@ void compare(double *t, double *s, long siz) {
 	}
 }
 
-//emm(cublasHandle_t handle,
-//                           cublasOperation_t transa, cublasOperation_t transb,
-//                           int m, int n, int k,
-//                           const double          *alpha,
-//                           const double          *A, int lda,
-//                           const double          *B, int ldb,
-//                           const double          *beta,
-//                           double          *C, int ldc)
-//
-//
-//Read more at: http://docs.nvidia.com/cuda/cublas/index.html#ixzz4PlFurrom
-//Follow us: @GPUComputing on Twitter | NVIDIA on Facebook
-
-cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b,
+cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b, double *a, double *b,
 		double *c) {
 	cublasHandle_t handle;
 	cublasCreate(&handle);
-	int lda = m, ldb = k, ldc = m;
-	const double alf = 1;
-	const double bet = 0;
-	const double *alpha = &alf;
-	const double *beta = &bet;
-	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, n, m, k,
-			alpha, b, lda, a, ldb, beta, c, ldc);
+	const double alpha = 1;
+	const double beta = 0;
+	//note cublas is column primary!
+    //need to transpose the order
+    //checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA,
+	//matrix_size.uiWA, &alpha, d_B, matrix_size.uiWB, d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
+
+	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, width_b, height_a, width_a,
+			&alpha, b, width_b, a, width_a, &beta, c, width_b);
 
 	cublasDestroy(handle);
 	return ret;
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 9;
-	long col_a = 5;
+	long lin_a = 7;
+	long col_a = 9;
 	long lin_b = col_a;
-	long col_b = 7;
+	long col_b = 5;
 	long vec_siz_a = ((lin_a + 1) * (col_a + 1));
 	long vec_siz_b = ((lin_b + 1) * (col_b + 1));
 	long vec_siz_c = ((lin_a + 1) * (col_b + 1));
@@ -273,7 +262,7 @@ void matrix_multiplication_abft() {
 	cudaMalloc(&device_array_a, siz_a);
 	cudaMalloc(&device_array_b, siz_b);
 	cudaMalloc(&device_array_c, siz_c);
-	//copy to device
+	//copy to devicex_size.uiWB, d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
 	//1d grid for abft operations
@@ -301,7 +290,8 @@ void matrix_multiplication_abft() {
 	printf("\n");
 	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 
-	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
+	//cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b, double *a, double *b,	double *c)
+	dgemm_host(col_a + 1, lin_a + 1, col_b + 1, lin_b + 1, device_array_a, device_array_b, device_array_c);
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
