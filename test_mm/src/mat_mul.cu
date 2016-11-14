@@ -250,7 +250,6 @@ cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b,
 }
 
 void matrix_multiplication_abft() {
-//	long size = 10;
 	long lin_a = 9;
 	long col_a = 5;
 	long lin_b = col_a;
@@ -266,8 +265,8 @@ void matrix_multiplication_abft() {
 	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
 	double* host_array_c = (double*) calloc(vec_siz_c, sizeof(double));
 	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
-	fill_mat_collum_major(host_array_a, lin_a + 1, col_a + 1);
-	fill_mat_collum_major(host_array_b, lin_b + 1, col_b + 1);
+	fill_mat_row_major(host_array_a, lin_a + 1, col_a + 1);
+	fill_mat_row_major(host_array_b, lin_b + 1, col_b + 1);
 
 	//cuda memories
 	double *device_array_a, *device_array_b, *device_array_c;
@@ -298,9 +297,9 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat_collum_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
+	print_mat_row_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
 	printf("\n");
-	print_mat_collum_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
+	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 
 
 	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
