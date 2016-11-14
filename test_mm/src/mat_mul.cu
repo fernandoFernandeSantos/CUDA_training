@@ -297,9 +297,9 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
+	print_mat_collum_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
 	printf("\n");
-	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
+	print_mat_collum_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 
 
 	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
