@@ -305,7 +305,7 @@ void matrix_multiplication_abft() {
 	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
+	print_mat_collum_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
 	printf("compare matrices\n");
 
 	free(host_array_a);
