@@ -183,11 +183,11 @@ void print_mat_collum_major(double *mat, long m, long n, const char *mat_name) {
 		}
 		printf("\n");
 	}
-	printf("on vector 1d\n");
-	for (i = 0; i < m * n; i++) {
-		printf("%ld ", (PRINT_TYPE) mat[i]);
-	}
-	printf("\n");
+//	printf("on vector 1d\n");
+//	for (i = 0; i < m * n; i++) {
+//		printf("%ld ", (PRINT_TYPE) mat[i]);
+//	}
+//	printf("\n");
 
 }
 
@@ -266,13 +266,9 @@ void matrix_multiplication_abft() {
 	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
 	double* host_array_c = (double*) calloc(vec_siz_c, sizeof(double));
 	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
-	fill_mat_row_major(host_array_a, lin_a + 1, col_a + 1);
-	fill_mat_row_major(host_array_b, lin_b + 1, col_b + 1);
+	fill_mat_collum_major(host_array_a, lin_a + 1, col_a + 1);
+	fill_mat_collum_major(host_array_b, lin_b + 1, col_b + 1);
 
-	//perform host matrix multiplication
-	//	gemm_1d(host_array_a, host_array_b, host_array_c_temp, ROWS_A, COLLUMS_A,
-	//			ROWS_B, COLLUMS_B, ROWS_A, COLLUMS_B);
-	//print_mat(host_array_c_temp, COLLUMS_B, ROWS_A, "matrix C temp");
 	//cuda memories
 	double *device_array_a, *device_array_b, *device_array_c;
 	cudaMalloc(&device_array_a, siz_a);
@@ -281,18 +277,7 @@ void matrix_multiplication_abft() {
 	//copy to device
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
-	//kernel parameters
-	//we know that each block has 1024 threads
-	//these vars are for mat multplication,
-//	long blocks = ceil(size / float(BLOCK_SIZE));
-//	long threads = ceil(size / float(blocks));
-
-//	//2d grid
-//	dim3 gridDim(blocks, blocks);
-//	//threads num, 2d
-//	dim3 blockDim(threads, threads);
-
-	//2d grid for abft operations
+	//1d grid for abft operations
 
 	long blocks_abft_first = ceil((col_a + 1) / float(BLOCK_SIZE));
 	long threads_abft_first = ceil((col_a + 1) / float(blocks_abft_first));
@@ -313,17 +298,17 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
+	print_mat_collum_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
 	printf("\n");
-	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
-//	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
-//			device_array_b, col_b);
+	print_mat_collum_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
+
+
 	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
-//	printf("\nblocks %ld threads %ld\n", blocks, threads);
+
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
+	print_mat_collum_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
 	printf("compare matrices\n");
-	//compare(host_array_c, host_array_c_temp, VECTOR_SIZE_C);
+
 	free(host_array_a);
 	free(host_array_b);
 	free(host_array_c);
