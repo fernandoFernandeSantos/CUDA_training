@@ -242,7 +242,7 @@ cublasStatus_t dgemm_host(int m, int n, int k, double *a, double *b,
 	const double bet = 0;
 	const double *alpha = &alf;
 	const double *beta = &bet;
-	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
+	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, n, m, k,
 			alpha, a, lda, b, ldb, beta, c, ldc);
 
 	cublasDestroy(handle);
