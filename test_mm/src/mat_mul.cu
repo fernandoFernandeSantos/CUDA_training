@@ -193,7 +193,14 @@ void fill_mat(double* t, long n) {
 	}
 }
 
-void fill_mat_mn(double *t, long m, long n) {
+void fill_mat_row_major(double *t, long m, long n) {
+	long i, j;
+	for (i = 0; i < m; i++)
+		for (j = 0; j < n; j++)
+			t[i * n + j] = double(i);
+}
+
+void fill_mat_collum_major(double *t, long m, long n) {
 	long i, j;
 	for (i = 0; i < m; i++)
 		for (j = 0; j < n; j++)
@@ -254,8 +261,8 @@ void matrix_multiplication_abft() {
 	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
 	double* host_array_c = (double*) calloc(vec_siz_c, sizeof(double));
 	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
-	fill_mat_mn(host_array_a, lin_a + 1, col_a + 1);
-	fill_mat_mn(host_array_b, lin_b + 1, col_b + 1);
+	fill_mat_row_major(host_array_a, lin_a + 1, col_a + 1);
+	fill_mat_row_major(host_array_b, lin_b + 1, col_b + 1);
 
 	//perform host matrix multiplication
 	//	gemm_1d(host_array_a, host_array_b, host_array_c_temp, ROWS_A, COLLUMS_A,
@@ -301,9 +308,9 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat_collum_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
+	print_mat_row_major(host_array_a, lin_a + 1, col_a + 1, "matrix A");
 	printf("\n");
-	print_mat_collum_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
+	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 //	mat_mult<<<gridDim, blockDim>>>(device_array_c, device_array_a,
 //			device_array_b, col_b);
 	dgemm_host(lin_a + 1,col_b + 1,col_a + 1, device_array_a, device_array_b, device_array_c);
