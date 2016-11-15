@@ -90,6 +90,8 @@ __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 		long threads = ceil(rows_c / double(blocks));
 		check_col<<<blocks, threads>>>(c, rows_c, cols_c);
 	}
+
+	__syncthreads();
 }
 
 //since dgemm is optimized for square matrices I'm going to use
