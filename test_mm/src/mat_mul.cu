@@ -263,8 +263,8 @@ void matrix_multiplication_abft() {
 			blocks_abft_second, threads_abft_second);
 	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
 			lin_a + 1, col_a + 1);
-//	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
-//			col_b + 1);
+	second_abraham_op<<<blocks_abft_second,threads_abft_second >>>(device_array_b, lin_b + 1,
+			col_b + 1);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
