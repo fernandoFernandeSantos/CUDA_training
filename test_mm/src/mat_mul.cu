@@ -75,22 +75,22 @@ __global__ void check_row(double *mat, long rows, long cols) {
 //man, I am so lazy
 __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	printf("i value %ld\n", i);
+	//printf("i value %ld\n", i);
 	//rows
-//	if (i == 0) {
-//		long blocks = ceil(cols_c / double(BLOCK_SIZE));
-//		long threads = ceil(cols_c / double(blocks));
+	if (i == 0) {
+		long blocks = ceil(cols_c / double(BLOCK_SIZE));
+		long threads = ceil(cols_c / double(blocks));
 //		printf("passou no row\n");
-//		check_row<<<blocks, threads>>>(c, rows_c, cols_c);
-//	}
-//	//cols
-//	if (i == 1) {
+		check_row<<<blocks, threads>>>(c, rows_c, cols_c);
+	}
+	//cols
+	if (i == 1) {
 //		printf("passou no col\n");
-//		long blocks = ceil(rows_c / double(BLOCK_SIZE));
-//		long threads = ceil(rows_c / double(blocks));
-//		check_col<<<blocks, threads>>>(c, rows_c, cols_c);
-//	}
-	printf("passou aqui foi\n");
+		long blocks = ceil(rows_c / double(BLOCK_SIZE));
+		long threads = ceil(rows_c / double(blocks));
+		check_col<<<blocks, threads>>>(c, rows_c, cols_c);
+	}
+	//printf("passou aqui foi\n");
 
 	__syncthreads();
 }
@@ -366,14 +366,14 @@ void matrix_multiplication_abft() {
 
 	//printf("compare matrices\n");
 
-//	free(host_array_a);
-//	free(host_array_b);
-//	free(host_array_c);
-//	free(host_array_c_temp);
+	free(host_array_a);
+	free(host_array_b);
+	free(host_array_c);
+	free(host_array_c_temp);
 
-//	cudaFree(device_array_a);
-//	cudaFree(device_array_b);
-//	cudaFree(device_array_c);
+	cudaFree(device_array_a);
+	cudaFree(device_array_b);
+	cudaFree(device_array_c);
 }
 
 int main(void) {
