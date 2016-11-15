@@ -81,7 +81,7 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
 	long k;
 	double acc = 0;
 	for (k = 0; k < rows_a; k++) {
-		acc += a[k * (cols_a - 1) + i];
+		acc += a[k * cols_a + i];
 	}
 	printf("a_index %ld acc %lf \n", rows_a * cols_a + i, acc);
 	long a_index = (rows_a - 1) * cols_a + i;
