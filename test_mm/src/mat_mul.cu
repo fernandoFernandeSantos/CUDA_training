@@ -119,6 +119,11 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 			height_a, width_a, &alpha, b, width_b, a, width_a, &beta, c,
 			width_b);
 
+	if(CUBLAS_STATUS_SUCCESS != ret){
+		printf("pau no blas\n");
+		exit(-1);
+	}
+
 	cublasDestroy(handle);
 	return ret;
 }
