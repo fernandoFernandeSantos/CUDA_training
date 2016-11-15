@@ -114,7 +114,7 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
 	for (k = 0; k < rows_a; k++) {
 		acc += a[k * cols_a + j];
 	}
-	//printf("a_index %ld acc %lf \n", rows_a * cols_a + j, acc);
+	printf("a_index %ld acc %lf \n", rows_a * cols_a + j, acc);
 	long a_index = (rows_a - 1) * cols_a + j;
 	a[a_index] = acc;
 }
@@ -142,17 +142,6 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 	b[b_index] = acc;
 }
 
-__global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
-		char op) {
-	long p = blockIdx.x * blockDim.x + threadIdx.x;
-	//zero rows
-	if (op == 'r') {
-		//num is which row/collum must be set to zero, 2, 3 ... or n
-		mat[p * rows + num] = 0;
-	} else {
-		mat[rows * num + p] = 0;
-	}
-}
 
 void first_abraham(double *a, long rows_a, long cols_a) {
 	//1d grid for abft operations
