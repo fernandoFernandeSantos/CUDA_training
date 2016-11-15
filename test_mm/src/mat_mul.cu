@@ -77,19 +77,20 @@ __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
 	printf("i value %ld\n", i);
 	//rows
-	if (i == 0) {
-		long blocks = ceil(cols_c / double(BLOCK_SIZE));
-		long threads = ceil(cols_c / double(blocks));
-		printf("passou no row\n");
-		check_row<<<blocks, threads>>>(c, rows_c, cols_c);
-	}
-	//cols
-	if (i == 1) {
-		printf("passou no col\n");
-		long blocks = ceil(rows_c / double(BLOCK_SIZE));
-		long threads = ceil(rows_c / double(blocks));
-		check_col<<<blocks, threads>>>(c, rows_c, cols_c);
-	}
+//	if (i == 0) {
+//		long blocks = ceil(cols_c / double(BLOCK_SIZE));
+//		long threads = ceil(cols_c / double(blocks));
+//		printf("passou no row\n");
+//		check_row<<<blocks, threads>>>(c, rows_c, cols_c);
+//	}
+//	//cols
+//	if (i == 1) {
+//		printf("passou no col\n");
+//		long blocks = ceil(rows_c / double(BLOCK_SIZE));
+//		long threads = ceil(rows_c / double(blocks));
+//		check_col<<<blocks, threads>>>(c, rows_c, cols_c);
+//	}
+	printf("passou aqui foi\n");
 
 	__syncthreads();
 }
