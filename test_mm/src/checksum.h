@@ -81,6 +81,7 @@ __global__ void check_row(double *mat, long rows, long cols) {
 //man, I am so lazy
 __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
+	printf("i value %ld\n", i);
 	//rows
 	if (i == 0) {
 		long blocks = ceil(cols_c / double(BLOCK_SIZE));
