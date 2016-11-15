@@ -3,22 +3,7 @@
 #include <math.h>
 #include "cuda_runtime.h"
 #include <cublas_v2.h>
-
-#define BLOCK_SIZE 32
-
-#define N 6
-#define ROWS_A N
-#define COLLUMS_A N
-
-#define ROWS_B N
-#define COLLUMS_B N
-
-#define VECTOR_SIZE_A COLLUMS_A * ROWS_A
-#define VECTOR_SIZE_B COLLUMS_B * ROWS_B
-#define VECTOR_SIZE_C ROWS_A * COLLUMS_B
-
-#define MAX_THRESHOLD  0.0001
-#define PRINT_TYPE long
+#include "checksum.h"
 
 int gemm(double** a, double** b, double** c, long lin_a, long col_a, long lin_b,
 		long col_b) {
@@ -53,15 +38,7 @@ int gemm_1d(double* a, double* b, double* c, long lin_a, long col_a, long lin_b,
 	return 0;
 }
 
-__global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
-	long x = (blockDim.x * blockIdx.x) + threadIdx.x;
-	long y = (blockDim.y * blockIdx.y) + threadIdx.y;
 
-	long index = (collums * y) + x;
-
-	if (collums * rows > index)
-		dst[index] = src[index];
-}
 
 //since dgemm is optimized for square matrices I'm going to use
 //first ABRAHAM operation
@@ -76,7 +53,6 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 //rows_b MUST BE THE SAME OF cols_a
 __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
-//	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
 	long k;
 	double acc = 0;
@@ -106,10 +82,11 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 		acc += b[i * cols_b + k];
 	}
 	long b_index = i * cols_b + cols_b - 1;
-	printf("b_index %ld acc %lf \n", b_index, acc);
+	//printf("b_index %ld acc %lf \n", b_index, acc);
 
 	b[b_index] = acc;
 }
+
 
 __global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
 		char op) {
@@ -123,21 +100,7 @@ __global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
 	}
 }
 
-__global__ void mat_mult(double *dst, double *a, double *b, long col) {
-	long i = blockIdx.y * blockDim.y + threadIdx.y;
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (i > col || j > col)
-		return;
-
-	double acc = 0;
-	long index_dst = i * col + j;
-	long k;
-	for (k = 0; k < col; k++) {
-		acc += a[i * col + k] * b[k * col + j];
-	}
-	dst[index_dst] = acc;
-}
 
 void print_mat_row_major(double *mat, long m, long n, const char *mat_name) {
 	printf("ROW-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
@@ -277,7 +240,13 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
-	printf("compare matrices\n");
+	int row_detected_errors_host, col_detected_errors_host;
+
+	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
+	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
+	printf("Detected row errors: %ld\nDetected collum errors %ld\n", row_detected_errors_host, col_detected_errors_host);
+
+	//printf("compare matrices\n");
 
 	free(host_array_a);
 	free(host_array_b);
@@ -294,6 +263,15 @@ int main(void) {
 	return 0;
 }
 //
+//__global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
+//	long x = (blockDim.x * blockIdx.x) + threadIdx.x;
+//	long y = (blockDim.y * blockIdx.y) + threadIdx.y;
+//
+//	long index = (collums * y) + x;
+//
+//	if (collums * rows > index)
+//		dst[index] = src[index];
+//}
 //int gemm_ongpu_abft(double *a, double *b, double *c, long lin_a, long col_a,
 //		long lin_b, long col_b) {
 //	long i, j;
@@ -408,4 +386,20 @@ int main(void) {
 //	free(host_array_b);
 //	free(host_array_c);
 //	free(host_array_c_temp);
+//}
+//
+//__global__ void mat_mult(double *dst, double *a, double *b, long col) {
+//	long i = blockIdx.y * blockDim.y + threadIdx.y;
+//	long j = blockIdx.x * blockDim.x + threadIdx.x;
+//
+//	if (i > col || j > col)
+//		return;
+//
+//	double acc = 0;
+//	long index_dst = i * col + j;
+//	long k;
+//	for (k = 0; k < col; k++) {
+//		acc += a[i * col + k] * b[k * col + j];
+//	}
+//	dst[index_dst] = acc;
 //}
