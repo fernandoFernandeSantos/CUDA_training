@@ -90,15 +90,14 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
 
 /**
  * 	for (i = 0; i < lin_b; i++) {
- acc = 0;
- for (j = 0; j < col_b; j++)
- acc += b[i * (col_b + 1) + j];
- //printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
- b[i * (col_b + 1) + col_b] = acc;
- }
+		acc = 0;
+		for (j = 0; j < col_b; j++)
+			 acc += b[i * (col_b + 1) + j];
+			 //printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
+		b[i * (col_b + 1) + col_b] = acc;
+	}
  */
-__global__ void second_abraham_op(double *b, long rows_b,
-		long cols_b) {
+__global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	long k;
@@ -106,8 +105,8 @@ __global__ void second_abraham_op(double *b, long rows_b,
 	for (k = 0; k < cols_b; k++) {
 		acc += b[i * cols_b + k];
 	}
-	long b_index = i * cols_b + cols_b;
-	printf("b_index %ld acc %lf \n",b_index, acc);
+	long b_index = i * cols_b + cols_b - 1;
+	printf("b_index %ld acc %lf \n", b_index, acc);
 
 	b[b_index] = acc;
 }
@@ -202,19 +201,20 @@ void compare(double *t, double *s, long siz) {
 	}
 }
 
-cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b, double *a, double *b,
-		double *c) {
+cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
+		double *a, double *b, double *c) {
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 	const double alpha = 1;
 	const double beta = 0;
 	//note cublas is column primary!
-    //need to transpose the order
-    //checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA,
+	//need to transpose the order
+	//checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA,
 	//matrix_size.uiWA, &alpha, d_B, matrix_size.uiWB, d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
 
-	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, width_b, height_a, width_a,
-			&alpha, b, width_b, a, width_a, &beta, c, width_b);
+	cublasStatus_t ret = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, width_b,
+			height_a, width_a, &alpha, b, width_b, a, width_a, &beta, c,
+			width_b);
 
 	cublasDestroy(handle);
 	return ret;
@@ -256,15 +256,14 @@ void matrix_multiplication_abft() {
 	long blocks_abft_second = ceil((lin_b + 1) / float(BLOCK_SIZE));
 	long threads_abft_second = ceil((lin_b + 1) / float(blocks_abft_second));
 
-
 	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first,
 			threads_abft_first);
 	printf("blocks_abft_second %ld threads_abft_second %ld\n",
 			blocks_abft_second, threads_abft_second);
 	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
 			lin_a + 1, col_a + 1);
-	second_abraham_op<<<blocks_abft_second,threads_abft_second >>>(device_array_b, lin_b + 1,
-			col_b + 1);
+	second_abraham_op<<<blocks_abft_second, threads_abft_second>>>(
+			device_array_b, lin_b + 1, col_b + 1);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
@@ -273,7 +272,8 @@ void matrix_multiplication_abft() {
 	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 
 	//cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b, double *a, double *b,	double *c)
-	dgemm_host(col_a + 1, lin_a + 1, col_b + 1, lin_b + 1, device_array_a, device_array_b, device_array_c);
+	dgemm_host(col_a + 1, lin_a + 1, col_b + 1, lin_b + 1, device_array_a,
+			device_array_b, device_array_c);
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
