@@ -165,5 +165,9 @@ void second_abraham(double *b, long rows_b, long cols_b){
 	second_abraham_op<<<blocks_abft_second, threads_abft_second>>>(b, rows_b + 1, cols_b + 1);
 }
 
+void abraham_check(double *c, long rows, long cols){
+	check_checksums<<<1,2>>>(c, rows, cols);
+}
+
 
 #endif /* CHECKSUM_H_ */
