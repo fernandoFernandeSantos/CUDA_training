@@ -166,6 +166,7 @@ void second_abraham(double *b, long rows_b, long cols_b){
 }
 
 void abraham_check(double *c, long rows, long cols){
+	printf("passou\n");
 	check_checksums<<<1,2>>>(c, rows, cols);
 }
 
