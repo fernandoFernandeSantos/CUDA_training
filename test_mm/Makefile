@@ -22,7 +22,7 @@ TARGET = $(VEC_ADD) $(MAT_MUL)
 all: $(MAT_MUL)
 
 $(MAT_MUL):$(SRC)$(MAT_MUL).cu
-	$(NVCC) $(SRC)$(MAT_MUL).cu -o -o $(MAT_MUL) $(NVCCFLAGS) $(GENCODE)
+	$(NVCC) $(SRC)$(MAT_MUL).cu -o $(MAT_MUL) $(NVCCFLAGS) $(GENCODE)
 	
 
 clean:
