@@ -74,21 +74,18 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 //        a[lin_a * col_a + j] = acc;
 //	}
 //rows_b MUST BE THE SAME OF cols_a
-__global__ void first_abraham_op(double *a, long rows_a, long cols_a_rows_b) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
+	long i = blockIdx.x * blockDim.x + threadIdx.x;
 //	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
-//it is so much work for a small task, but in this way i can do everything in a O(row_a) complexity
-//first I calculate the checksum values
-//	if(((i + 1) % rows_a == 0) && (i > 0)){
-//		//iterate on j dimension
 	long k;
 	double acc = 0;
 	for (k = 0; k < rows_a; k++) {
-		acc += a[j * rows_a + k];
+		acc += a[k * cols_a + i];
 	}
 
-
+	long a_index = rows_a * cols_a + i;
+	a[a_index] = acc;
 }
 
 /**
@@ -270,8 +267,8 @@ void matrix_multiplication_abft() {
 			threads_abft_first);
 	printf("blocks_abft_second %ld threads_abft_second %ld\n",
 			blocks_abft_second, threads_abft_second);
-//	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
-//			lin_a + 1, col_a + 1);
+	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
+			lin_a + 1, col_a + 1);
 //	second_abraham_op<<<gridDimABFT_2nd, blockDimABFT_2nd>>>(device_array_b, lin_b + 1,
 //			col_b + 1);
 
