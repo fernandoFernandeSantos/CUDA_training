@@ -168,8 +168,8 @@ void matrix_multiplication_abft() {
 	print_mat_row_major(host_array_b, lin_b + 1, col_b + 1, "matrix B");
 
 	//cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b, double *a, double *b,	double *c)
-	dgemm_host(col_a + 1, lin_a + 1, col_b + 1, lin_b + 1, device_array_a,
-			device_array_b, device_array_c);
+//	dgemm_host(col_a + 1, lin_a + 1, col_b + 1, lin_b + 1, device_array_a,
+//			device_array_b, device_array_c);
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
