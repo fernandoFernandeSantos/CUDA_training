@@ -75,16 +75,16 @@ __global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 //	}
 //rows_b MUST BE THE SAME OF cols_a
 __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
+	long j = blockIdx.x * blockDim.x + threadIdx.x;
 //	long i = blockIdx.y * blockDim.y + threadIdx.y;
 
 	long k;
 	double acc = 0;
 	for (k = 0; k < rows_a; k++) {
-		acc += a[k * cols_a + i];
+		acc += a[k * cols_a + j];
 	}
-	printf("a_index %ld acc %lf \n", rows_a * cols_a + i, acc);
-	long a_index = (rows_a - 1) * cols_a + i;
+	//printf("a_index %ld acc %lf \n", rows_a * cols_a + j, acc);
+	long a_index = (rows_a - 1) * cols_a + j;
 	a[a_index] = acc;
 }
 
@@ -97,25 +97,19 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
  b[i * (col_b + 1) + col_b] = acc;
  }
  */
-__global__ void second_abraham_op(double *b, long rows_b_cols_a,
-		long collums_b) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
-//	long i = blockIdx.y * blockDim.y + threadIdx.y;
+__global__ void second_abraham_op(double *b, long rows_b,
+		long cols_b) {
+	long i = blockIdx.x * blockDim.x + threadIdx.x;
 
-//	//printf("j %ld rows_b %ld j mod rows %ld\n", j, rows_b_cols_a, j % rows_b_cols_a);
-//	if (((j + 1) % rows_b_cols_a == 0) && (j > 0)) {
 	long k;
 	double acc = 0;
-	for (k = 0; k < collums_b; k++) {
-		acc += b[j * collums_b + k];
+	for (k = 0; k < cols_b; k++) {
+		acc += b[i * cols_b + k];
 	}
-	//printf("dentro acc %lf j * collums_b + collums_b %ld\n", acc, j * collums_b + collums_b);
-	b[(collums_b - 1) * collums_b + j] = acc;
-//	}
+	long b_index = i * cols_b + cols_b;
+	printf("b_index %ld acc %lf \n",b_index, acc);
 
-//	if(((i + 1) % rows_b_cols_a == 0) && (i > 0)){
-//		b[(rows_b_cols_a - 1) * collums_b + j] = 0;
-//	}
+	b[b_index] = acc;
 }
 
 __global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
