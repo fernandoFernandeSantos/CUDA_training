@@ -11,6 +11,17 @@
 #include <cublas_v2.h>
 #include <math.h>
 
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
+		true) {
+	if (code != cudaSuccess) {
+		fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file,
+				line);
+		if (abort)
+			exit(code);
+	}
+}
 
 __device__ int row_detected_errors = 0;
 __device__ int col_detected_errors = 0;
@@ -31,9 +42,7 @@ __device__ int col_detected_errors = 0;
 #define MAX_THRESHOLD  0.0001
 #define PRINT_TYPE long
 
-
-
-__global__ void check_col(double *mat, long rows, long cols){
+__global__ void check_col(double *mat, long rows, long cols) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	long k;
@@ -45,15 +54,13 @@ __global__ void check_col(double *mat, long rows, long cols){
 	long b_index = i * cols + cols - 1;
 	//printf("b_index %ld acc %lf \n", b_index, acc);
 
-	if(fabs(mat[b_index]) - fabs(acc)){
+	if (fabs(mat[b_index]) - fabs(acc)) {
 		atomicAdd(&col_detected_errors, 1);
 	}
 
 }
 
-
-
-__global__ void check_row(double *mat, long rows, long cols){
+__global__ void check_row(double *mat, long rows, long cols) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
 
 	long k;
@@ -64,7 +71,7 @@ __global__ void check_row(double *mat, long rows, long cols){
 	}
 	//printf("a_index %ld acc %lf \n", rows_a * cols_a + j, acc);
 	long a_index = (rows - 1) * cols + j;
-	if(fabs(mat[a_index]) - fabs(acc) <= MAX_THRESHOLD){
+	if (fabs(mat[a_index]) - fabs(acc) <= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
 	}
 
@@ -72,22 +79,21 @@ __global__ void check_row(double *mat, long rows, long cols){
 
 //DYNAMIC PARALLELISM ONLY TO CALL NEW KERNELS, ARE FUCK KIDDING???
 //man, I am so lazy
-__global__ void check_checksums(double *c, long rows_c, long cols_c){
+__global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
 	//rows
-	if (i == 0){
+	if (i == 0) {
 		long blocks = ceil(cols_c / double(BLOCK_SIZE));
 		long threads = ceil(cols_c / double(blocks));
 		check_row<<<blocks, threads>>>(c, rows_c, cols_c);
 	}
 	//cols
-	if(i == 1){
+	if (i == 1) {
 		long blocks = ceil(rows_c / double(BLOCK_SIZE));
 		long threads = ceil(rows_c / double(blocks));
 		check_col<<<blocks, threads>>>(c, rows_c, cols_c);
 	}
 }
-
 
 //since dgemm is optimized for square matrices I'm going to use
 //first ABRAHAM operation
@@ -115,12 +121,12 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
 
 /**
  * 	for (i = 0; i < lin_b; i++) {
-		acc = 0;
-		for (j = 0; j < col_b; j++)
-			 acc += b[i * (col_b + 1) + j];
-			 //printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
-		b[i * (col_b + 1) + col_b] = acc;
-	}
+ acc = 0;
+ for (j = 0; j < col_b; j++)
+ acc += b[i * (col_b + 1) + j];
+ //printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
+ b[i * (col_b + 1) + col_b] = acc;
+ }
  */
 __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -136,7 +142,6 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 	b[b_index] = acc;
 }
 
-
 __global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
 		char op) {
 	long p = blockIdx.x * blockDim.x + threadIdx.x;
@@ -149,26 +154,30 @@ __global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
 	}
 }
 
-void first_abraham(double *a, long rows_a, long cols_a){
+void first_abraham(double *a, long rows_a, long cols_a) {
 	//1d grid for abft operations
 
 	long blocks_abft_first = ceil((cols_a + 1) / float(BLOCK_SIZE));
 	long threads_abft_first = ceil((cols_a + 1) / float(blocks_abft_first));
-	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(a,	rows_a + 1, cols_a + 1);
+	(first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(a, rows_a + 1,
+			cols_a + 1));
+	gpuErrchk( cudaPeekAtLastError() );
 }
 
-void second_abraham(double *b, long rows_b, long cols_b){
+void second_abraham(double *b, long rows_b, long cols_b) {
 //second
 	long blocks_abft_second = ceil((rows_b + 1) / float(BLOCK_SIZE));
 	long threads_abft_second = ceil((rows_b + 1) / float(blocks_abft_second));
 
-	second_abraham_op<<<blocks_abft_second, threads_abft_second>>>(b, rows_b + 1, cols_b + 1);
+	second_abraham_op<<<blocks_abft_second, threads_abft_second>>>(b,
+			rows_b + 1, cols_b + 1);
+	gpuErrchk( cudaPeekAtLastError() );
 }
 
-void abraham_check(double *c, long rows, long cols){
+void abraham_check(double *c, long rows, long cols) {
 	printf("passou\n");
-	check_checksums<<<1,2>>>(c, rows, cols);
+	check_checksums<<<1, 2>>>(c, rows, cols);
+	gpuErrchk( cudaPeekAtLastError() );
 }
-
 
 #endif /* CHECKSUM_H_ */
