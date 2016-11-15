@@ -188,14 +188,14 @@ void matrix_multiplication_abft() {
 
 	//printf("compare matrices\n");
 
-	free(host_array_a);
-	free(host_array_b);
-	free(host_array_c);
-	free(host_array_c_temp);
-
-	cudaFree(device_array_a);
-	cudaFree(device_array_b);
-	cudaFree(device_array_c);
+//	free(host_array_a);
+//	free(host_array_b);
+//	free(host_array_c);
+//	free(host_array_c_temp);
+//
+//	cudaFree(device_array_a);
+//	cudaFree(device_array_b);
+//	cudaFree(device_array_c);
 }
 
 int main(void) {
