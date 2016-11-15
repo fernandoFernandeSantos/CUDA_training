@@ -8,7 +8,7 @@ MAT_MUL = mat_mul
 
 GENCODE=-gencode arch=compute_35,code=sm_35
 
-NVCCFLAGS = -lcublas -lcublas_device -lcudadevrt -lcudart -rdc=true -dc 
+NVCCFLAGS = -lcublas -lcublas_device -lcudadevrt -lcudart -rdc=true
 #-lcublas
 ifeq ($(DEBUG), 1)
 NVCCFLAGS += -G -g
@@ -22,8 +22,8 @@ TARGET = $(VEC_ADD) $(MAT_MUL)
 all: $(MAT_MUL)
 
 $(MAT_MUL):$(SRC)$(MAT_MUL).cu
-	$(NVCC) $(SRC)$(MAT_MUL).cu -o $(MAT_MUL).o $(NVCCFLAGS) $(GENCODE)
-	$(NVCC) $(MAT_MUL).o -o $(MAT_MUL) -lcublas -gencode arch=compute_35,code=sm_35
+	$(NVCC) $(SRC)$(MAT_MUL).cu -o -o $(MAT_MUL) -lcublas -gencode $(NVCCFLAGS) $(GENCODE)
 	
+
 clean:
 	rm -f $(TARGET) *.o
