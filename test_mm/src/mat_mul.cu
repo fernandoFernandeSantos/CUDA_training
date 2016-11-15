@@ -358,7 +358,7 @@ void matrix_multiplication_abft() {
 
 	free(host_array_a);
 	free(host_array_b);
-	free(host_array_c);
+	//free(host_array_c);
 
 	cudaFree(device_array_a);
 	cudaFree(device_array_b);
