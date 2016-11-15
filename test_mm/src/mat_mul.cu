@@ -36,7 +36,7 @@ __device__ int col_detected_errors = 0;
 #define MAX_THRESHOLD  0.0001
 #define PRINT_TYPE long
 
-__global__ void check_col(double *mat, long rows, long cols) {
+__device__ void check_col(double *mat, long rows, long cols) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	long k;
@@ -54,7 +54,7 @@ __global__ void check_col(double *mat, long rows, long cols) {
 
 }
 
-__global__ void check_row(double *mat, long rows, long cols) {
+__device__ void check_row(double *mat, long rows, long cols) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
 
 	long k;
@@ -172,7 +172,7 @@ void second_abraham(double *b, long rows_b, long cols_b) {
 }
 
 void abraham_check(double *c, long rows, long cols) {
-	printf("passou\n");
+	printf("passou why\n");
 	check_checksums<<<1, 2>>>(c, rows, cols);
 	gpuErrchk( cudaPeekAtLastError() );
 }
