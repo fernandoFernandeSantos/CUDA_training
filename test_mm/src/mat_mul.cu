@@ -331,8 +331,8 @@ void matrix_multiplication_abft() {
 //			threads_abft_first);
 //	printf("blocks_abft_second %ld threads_abft_second %ld\n",
 //			blocks_abft_second, threads_abft_second);
-	first_abraham(device_array_a, lin_a + 1, col_a + 1);
-	second_abraham(device_array_b, lin_b + 1, col_b + 1);
+	first_abraham(device_array_a, lin_a, col_a );
+	second_abraham(device_array_b, lin_b, col_b);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
