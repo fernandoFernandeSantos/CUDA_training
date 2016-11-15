@@ -143,7 +143,7 @@ void matrix_multiplication_abft() {
 	double* host_array_a = (double*) calloc(vec_siz_a, sizeof(double));
 	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
 	double* host_array_c = (double*) calloc(vec_siz_c, sizeof(double));
-	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
+//	double* host_array_c_temp = (double*) calloc(vec_siz_c, sizeof(double));
 	fill_mat_row_major(host_array_a, lin_a + 1, col_a + 1);
 	fill_mat_row_major(host_array_b, lin_b + 1, col_b + 1);
 
@@ -191,7 +191,7 @@ void matrix_multiplication_abft() {
 	free(host_array_a);
 	free(host_array_b);
 	free(host_array_c);
-	free(host_array_c_temp);
+//	free(host_array_c_temp);
 
 //	cudaFree(device_array_a);
 //	cudaFree(device_array_b);
