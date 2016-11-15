@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include "cuda_runtime.h"
-#include <cublas_v2.h>
+
 #include "checksum.h"
 
 int gemm(double** a, double** b, double** c, long lin_a, long col_a, long lin_b,
@@ -40,65 +38,7 @@ int gemm_1d(double* a, double* b, double* c, long lin_a, long col_a, long lin_b,
 
 
 
-//since dgemm is optimized for square matrices I'm going to use
-//first ABRAHAM operation
-//	for (j = 0; j < col_a; j++) {
-//		acc = 0;
-//		for (i = 0; i < lin_a; i++)
-//
-//			acc += a[i * col_a + j];
-//
-//        a[lin_a * col_a + j] = acc;
-//	}
-//rows_b MUST BE THE SAME OF cols_a
-__global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
 
-	long k;
-	double acc = 0;
-	for (k = 0; k < rows_a; k++) {
-		acc += a[k * cols_a + j];
-	}
-	//printf("a_index %ld acc %lf \n", rows_a * cols_a + j, acc);
-	long a_index = (rows_a - 1) * cols_a + j;
-	a[a_index] = acc;
-}
-
-/**
- * 	for (i = 0; i < lin_b; i++) {
-		acc = 0;
-		for (j = 0; j < col_b; j++)
-			 acc += b[i * (col_b + 1) + j];
-			 //printf("i * col_b %ld col b %ld  acc %lf\n", i * col_b, col_b, acc);
-		b[i * (col_b + 1) + col_b] = acc;
-	}
- */
-__global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-
-	long k;
-	double acc = 0;
-	for (k = 0; k < cols_b; k++) {
-		acc += b[i * cols_b + k];
-	}
-	long b_index = i * cols_b + cols_b - 1;
-	//printf("b_index %ld acc %lf \n", b_index, acc);
-
-	b[b_index] = acc;
-}
-
-
-__global__ void zero_col_or_row(double *mat, long rows, long cols, long num,
-		char op) {
-	long p = blockIdx.x * blockDim.x + threadIdx.x;
-	//zero rows
-	if (op == 'r') {
-		//num is which row/collum must be set to zero, 2, 3 ... or n
-		mat[p * rows + num] = 0;
-	} else {
-		mat[rows * num + p] = 0;
-	}
-}
 
 
 
@@ -210,23 +150,16 @@ void matrix_multiplication_abft() {
 	//copy to devicex_size.uiWB, d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
-	//1d grid for abft operations
 
-	long blocks_abft_first = ceil((col_a + 1) / float(BLOCK_SIZE));
-	long threads_abft_first = ceil((col_a + 1) / float(blocks_abft_first));
 
-	//second
-	long blocks_abft_second = ceil((lin_b + 1) / float(BLOCK_SIZE));
-	long threads_abft_second = ceil((lin_b + 1) / float(blocks_abft_second));
 
-	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first,
-			threads_abft_first);
-	printf("blocks_abft_second %ld threads_abft_second %ld\n",
-			blocks_abft_second, threads_abft_second);
-	first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(device_array_a,
-			lin_a + 1, col_a + 1);
-	second_abraham_op<<<blocks_abft_second, threads_abft_second>>>(
-			device_array_b, lin_b + 1, col_b + 1);
+//
+//	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first,
+//			threads_abft_first);
+//	printf("blocks_abft_second %ld threads_abft_second %ld\n",
+//			blocks_abft_second, threads_abft_second);
+	first_abraham(device_array_a, lin_a + 1, col_a + 1);
+	second_abraham(device_array_b, lin_b + 1, col_b + 1);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
@@ -244,7 +177,7 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
 	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
-	printf("Detected row errors: %ld\nDetected collum errors %ld\n", row_detected_errors_host, col_detected_errors_host);
+	printf("Detected row errors: %d\nDetected collum errors %d\n", row_detected_errors_host, col_detected_errors_host);
 
 	//printf("compare matrices\n");
 
