@@ -306,7 +306,7 @@ void matrix_multiplication_abft() {
 	long vec_siz_c = ((lin_a + 1) * (col_b + 1));
 	const long siz_a = vec_siz_a * sizeof(double);
 	const long siz_b = vec_siz_b * sizeof(double);
-	const long siz_c = vec_siz_b * sizeof(double);
+	const long siz_c = vec_siz_c * sizeof(double);
 	//host memories
 	double* host_array_a = (double*) calloc(vec_siz_a, sizeof(double));
 	double* host_array_b = (double*) calloc(vec_siz_b, sizeof(double));
