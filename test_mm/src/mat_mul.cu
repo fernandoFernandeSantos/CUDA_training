@@ -175,7 +175,7 @@ void matrix_multiplication_abft() {
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
 	int row_detected_errors_host, col_detected_errors_host;
 
-	check_checksums(device_array_c, (lin_a + 1), (col_b + 1));
+	abraham_check(device_array_c, (lin_a + 1), (col_b + 1));
 
 	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
 	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
