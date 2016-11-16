@@ -320,11 +320,11 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_c, lin_a + 1, col_b + 1, "GPU result mat");
-	int row_detected_errors_host, col_detected_errors_host;
+	int row_detected_errors_host = 0, col_detected_errors_host;
 
 	abraham_check(device_array_c, (lin_a + 1), (col_b + 1));
 
-	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int));
+	//cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int));
 	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int));
 	printf("Detected row errors: %d\nDetected collum errors %d\n", row_detected_errors_host, col_detected_errors_host);
 
