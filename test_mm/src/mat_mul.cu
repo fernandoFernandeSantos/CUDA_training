@@ -47,9 +47,8 @@ __global__ void check_col(double *mat, long rows, long cols) {
 	}
 	long b_index = i * cols + cols - 1;
 	//printf("b_index %ld acc %lf \n", b_index, acc);
-
-
-	if (fabs(mat[b_index]) - fabs(acc)) {
+	double diff = fabs(fabs(mat[b_index]) - fabs(acc));
+	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&col_detected_errors, 1);
 		printf("passou no col mat[%ld] = %lf diff %lf\n", b_index, mat[b_index], fabs(mat[b_index]) - fabs(acc));
 	}
@@ -67,7 +66,8 @@ __global__ void check_row(double *mat, long rows, long cols) {
 	}
 	//printf("a_index %ld acc %lf \n", rows_a * cols_a + j, acc);
 	long a_index = (rows - 1) * cols + j;
-	if (fabs(mat[a_index]) - fabs(acc) <= MAX_THRESHOLD) {
+	double diff = fabs(fabs(mat[a_index]) - fabs(acc));
+	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
 		printf("passou no row\n");
 	}
