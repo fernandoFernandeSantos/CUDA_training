@@ -51,7 +51,7 @@ __global__ void check_col(double *mat, long rows, long cols) {
 
 	if (fabs(mat[b_index]) - fabs(acc)) {
 		atomicAdd(&col_detected_errors, 1);
-		printf("passou no row\n");
+		printf("passou no col\n");
 	}
 	//__syncthreads();
 }
