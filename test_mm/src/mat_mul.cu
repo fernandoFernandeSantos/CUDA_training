@@ -50,7 +50,7 @@ __global__ void check_col(double *mat, long rows, long cols) {
 	double diff = fabs(fabs(mat[b_index]) - fabs(acc));
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&col_detected_errors, 1);
-		printf("passou no col mat[%ld] = %lf diff %lf read %lf calc %lf \n", b_index, mat[b_index],mat[b_index], acc, diff);
+		//printf("passou no col mat[%ld] = %lf diff %lf read %lf calc %lf \n", b_index, mat[b_index],mat[b_index], acc, diff);
 	}
 	//__syncthreads();
 }
@@ -69,7 +69,7 @@ __global__ void check_row(double *mat, long rows, long cols) {
 	double diff = fabs(fabs(mat[a_index]) - fabs(acc));
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
-		printf("passou no row\n");
+		//printf("passou no row\n");
 	}
 	//__syncthreads();
 }
@@ -96,7 +96,7 @@ __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	//printf("passou aqui foi\n");
 
 	__syncthreads();
-	printf("values %d %d\n ", row_detected_errors, col_detected_errors);
+	//printf("values %d %d\n ", row_detected_errors, col_detected_errors);
 }
 
 //since dgemm is optimized for square matrices I'm going to use
@@ -142,7 +142,7 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 		acc += b[i * cols_b + k];
 	}
 	long b_index = i * cols_b + cols_b - 1;
-	if (i == 0)	b[1] = 9999;
+	if (i == 0)	b[1] = 9999; //pseudo fault injection
 
 	//printf("b_index %ld acc %lf \n", b_index, acc);
 
