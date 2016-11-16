@@ -324,8 +324,8 @@ void matrix_multiplication_abft() {
 
 	abraham_check(device_array_c, (lin_a + 1), (col_b + 1));
 
-	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
-	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int), cudaMemcpyDeviceToHost);
+	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int));
+	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int));
 	printf("Detected row errors: %d\nDetected collum errors %d\n", row_detected_errors_host, col_detected_errors_host);
 
 	//printf("compare matrices\n");
