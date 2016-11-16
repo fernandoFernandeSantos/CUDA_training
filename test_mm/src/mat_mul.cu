@@ -20,6 +20,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 __device__ int row_detected_errors = 0;
 __device__ int col_detected_errors = 0;
 
+double *saved_col, *saved_row;
+
 #define BLOCK_SIZE 32
 
 #define N 6
@@ -50,7 +52,8 @@ __global__ void check_col(double *mat, long rows, long cols) {
 	double diff = fabs(fabs(mat[b_index]) - fabs(acc));
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&col_detected_errors, 1);
-		printf("passou no col mat[%ld] = %lf diff %lf read %lf calc %lf \n", b_index, mat[b_index],mat[b_index], acc, diff);
+		printf("passou no col mat[%ld] = %lf diff %lf read %lf calc %lf \n",
+				b_index, mat[b_index], mat[b_index], acc, diff);
 	}
 	//__syncthreads();
 }
@@ -69,7 +72,8 @@ __global__ void check_row(double *mat, long rows, long cols) {
 	double diff = fabs(fabs(mat[a_index]) - fabs(acc));
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
-		printf("passou no col mat[%ld] = %lf diff %lf read %lf calc %lf \n", a_index, mat[a_index],mat[a_index], acc, diff);
+		printf("passou no col mat[%ld] = %lf diff %lf read %lf calc %lf \n",
+				a_index, mat[a_index], mat[a_index], acc, diff);
 	}
 	//__syncthreads();
 }
@@ -149,8 +153,8 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 	b[b_index] = acc;
 }
 
-
-__global__ void calc_checksums(double *a, double *b, long rows_a, long cols_a, long rows_b, long cols_b) {
+__global__ void calc_checksums(double *a, double *b, long rows_a, long cols_a,
+		long rows_b, long cols_b) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
 	//printf("i value %ld\n", i);
 	//rows
@@ -158,32 +162,71 @@ __global__ void calc_checksums(double *a, double *b, long rows_a, long cols_a, l
 		//1d grid for abft operations
 		long blocks_abft_first = ceil((cols_a + 1) / float(BLOCK_SIZE));
 		long threads_abft_first = ceil((cols_a + 1) / float(blocks_abft_first));
-		first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(a, rows_a + 1,
-			cols_a + 1);
+		first_abraham_op<<<blocks_abft_first, threads_abft_first>>>(a,
+				rows_a + 1, cols_a + 1);
 	}
 
-	if (i == 1){
+	if (i == 1) {
 		//second
 		long blocks_abft_second = ceil((rows_b + 1) / float(BLOCK_SIZE));
-		long threads_abft_second = ceil((rows_b + 1) / float(blocks_abft_second));
+		long threads_abft_second = ceil(
+				(rows_b + 1) / float(blocks_abft_second));
 		second_abraham_op<<<blocks_abft_second, threads_abft_second>>>(b,
 				rows_b + 1, cols_b + 1);
 	}
 	__syncthreads();
 }
 
-
-void abraham_sum(double *a, double *b, long rows_a, long cols_a, long rows_b, long cols_b){
-	calc_checksums<<<1, 2>>>(a, b, rows_a, cols_a, rows_b, cols_b);
-	gpuErrchk( cudaPeekAtLastError() );
+__global__ void cp_row(double *dst, double *src, long rows, long cols){
+	long j = blockIdx.x * blockDim.x + threadIdx.x;
+	long a_index = (rows - 1) * cols + j;
+	//printf("a_index %ld acc %lf \n", a_index, acc);
+	dst[j] = src[a_index];
 }
+
+__global__ void cp_col(double *dst, double *src, long row, long cols){
+	long i = blockIdx.x * blockDim.x + threadIdx.x;
+	long b_index = i * cols + cols - 1;
+	dst[i] = src[b_index];
+}
+
+__global__ void save_vectors(double *a, double *b, long rows_a, long cols_a,
+		long rows_b, long cols_b, double *saved_row, double *saved_col) {
+	long i = blockIdx.x * blockDim.x + threadIdx.x;
+	//printf("i value %ld\n", i);
+	//rows
+	if (i == 0) {
+		//1d grid for abft operations
+		long blocks = ceil(cols_a / float(BLOCK_SIZE));
+		long threads = ceil(cols_a / float(blocks));
+		cp_row<<<blocks, threads>>>(saved_row, a, rows_a, cols_a);
+	}
+
+	if (i == 1) {
+		//second
+		long blocks = ceil(rows_b / float(BLOCK_SIZE));
+		long threads = ceil(rows_b / float(blocks));
+		cp_col<<<blocks, threads>>>(saved_col, b, rows_b, cols_b);
+	}
+	__syncthreads();
+}
+
+void abraham_sum(double *a, double *b, long rows_a, long cols_a, long rows_b,
+		long cols_b) {
+	//these variables will be live only for abft
+//	cudaMalloc()
+
+	//-----------------------------------------
+	calc_checksums<<<1, 2>>>(a, b, rows_a, cols_a, rows_b, cols_b);
+	gpuErrchk(cudaPeekAtLastError());
+}
+
 
 void abraham_check(double *c, long rows, long cols) {
 //	printf("passou why\n");
 	check_checksums<<<1, 2>>>(c, rows, cols);
-	gpuErrchk( cudaPeekAtLastError() );
+	gpuErrchk(cudaPeekAtLastError());
 }
-
 
 void print_mat_row_major(double *mat, long m, long n, const char *mat_name) {
 	printf("ROW-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
@@ -262,7 +305,7 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 			height_a, width_a, &alpha, b, width_b, a, width_a, &beta, c,
 			width_b);
 
-	if(CUBLAS_STATUS_SUCCESS != ret){
+	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas\n");
 		exit(-1);
 	}
@@ -299,8 +342,6 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
 
-
-
 //
 //	printf("blocks_abft_first %ld threads_abft_firs %ld\n", blocks_abft_first,
 //			threads_abft_first);
@@ -324,9 +365,12 @@ void matrix_multiplication_abft() {
 
 	abraham_check(device_array_c, (lin_a + 1), (col_b + 1));
 
-	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int));
-	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int));
-	printf("Detected row errors: %d\nDetected collum errors %d\n", row_detected_errors_host, col_detected_errors_host);
+	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,
+			sizeof(int));
+	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,
+			sizeof(int));
+	printf("Detected row errors: %d\nDetected collum errors %d\n",
+			row_detected_errors_host, col_detected_errors_host);
 
 	//printf("compare matrices\n");
 	gpuErrchk(cudaDeviceSynchronize());
