@@ -50,7 +50,7 @@ __global__ void check_col(double *mat, long rows, long cols) {
 	double diff = fabs(fabs(mat[b_index]) - fabs(acc));
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&col_detected_errors, 1);
-		printf("passou no col mat[%ld] = %lf diff %lf\n", b_index, mat[b_index], fabs(mat[b_index]) - fabs(acc));
+		printf("passou no col mat[%ld] = %lf diff %lf read %lf calc %lf \n", b_index, mat[b_index],mat[b_index], acc, diff);
 	}
 	//__syncthreads();
 }
