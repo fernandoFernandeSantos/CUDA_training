@@ -51,7 +51,7 @@ __global__ void check_col(double *mat, long rows, long cols) {
 	if (fabs(mat[b_index]) - fabs(acc)) {
 		atomicAdd(&col_detected_errors, 1);
 	}
-
+	__syncthreads();
 }
 
 __global__ void check_row(double *mat, long rows, long cols) {
@@ -68,7 +68,7 @@ __global__ void check_row(double *mat, long rows, long cols) {
 	if (fabs(mat[a_index]) - fabs(acc) <= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
 	}
-
+	__syncthreads();
 }
 
 //DYNAMIC PARALLELISM ONLY TO CALL NEW KERNELS, ARE FUCK KIDDING???
@@ -355,7 +355,7 @@ void matrix_multiplication_abft() {
 	printf("Detected row errors: %d\nDetected collum errors %d\n", row_detected_errors_host, col_detected_errors_host);
 
 	//printf("compare matrices\n");
-
+	gpuErrchk(cudaDeviceSynchronize());
 	free(host_array_a);
 	free(host_array_b);
 	free(host_array_c);
