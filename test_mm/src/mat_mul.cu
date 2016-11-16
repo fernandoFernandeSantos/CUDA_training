@@ -142,7 +142,7 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 		acc += b[i * cols_b + k];
 	}
 	long b_index = i * cols_b + cols_b - 1;
-//	if (i == 0)	b[1] = 9999; //pseudo fault injection
+	if (i == 0)	b[1] = 9999; //pseudo fault injection
 
 	//printf("b_index %ld acc %lf \n", b_index, acc);
 
