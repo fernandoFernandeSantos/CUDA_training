@@ -51,7 +51,7 @@ __global__ void check_col(double *mat, long rows, long cols) {
 	if (fabs(mat[b_index]) - fabs(acc)) {
 		atomicAdd(&col_detected_errors, 1);
 	}
-	__syncthreads();
+	//__syncthreads();
 }
 
 __global__ void check_row(double *mat, long rows, long cols) {
@@ -68,14 +68,14 @@ __global__ void check_row(double *mat, long rows, long cols) {
 	if (fabs(mat[a_index]) - fabs(acc) <= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
 	}
-	__syncthreads();
+	//__syncthreads();
 }
 
 //DYNAMIC PARALLELISM ONLY TO CALL NEW KERNELS, ARE FUCK KIDDING???
 //man, I am so lazy
 __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	printf("i value %ld\n", i);
+	//printf("i value %ld\n", i);
 	//rows
 	if (i == 0) {
 		long blocks = ceil(cols_c / double(BLOCK_SIZE));
@@ -93,6 +93,7 @@ __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	//printf("passou aqui foi\n");
 
 	__syncthreads();
+	printf("values %d %d\n ", row_detected_errors, col_detected_errors);
 }
 
 //since dgemm is optimized for square matrices I'm going to use
@@ -169,43 +170,6 @@ void abraham_check(double *c, long rows, long cols) {
 	check_checksums<<<1, 2>>>(c, rows, cols);
 	gpuErrchk( cudaPeekAtLastError() );
 }
-
-
-int gemm(double** a, double** b, double** c, long lin_a, long col_a, long lin_b,
-		long col_b) {
-	long i, j, k;
-	if (col_a != lin_b)
-		return -1;
-	for (i = 0; i < lin_a; i++)
-		for (j = 0; j < col_b; j++) {
-			c[i][j] = 0;
-			for (k = 0; k < col_a; k++)
-				c[i][j] += a[i][k] * b[k][j];
-		}
-	return 0;
-}
-
-int gemm_1d(double* a, double* b, double* c, long lin_a, long col_a, long lin_b,
-		long col_b, long col_c, long lin_c) {
-	long i, j, k;
-	if (col_a != lin_b)
-		return -1;
-
-	for (i = 0; i < lin_a; i++) {
-		for (j = 0; j < col_b; j++) {
-			long index_c = i * col_c + j;
-			c[index_c] = 0;
-			for (k = 0; k < col_a; k++) {
-				c[index_c] += a[i * col_a + k] * b[k * col_b + j];
-			}
-		}
-		//printf("\n");
-	}
-	return 0;
-}
-
-
-
 
 
 
@@ -369,6 +333,40 @@ int main(void) {
 	matrix_multiplication_abft();
 	return 0;
 }
+//
+//
+//int gemm(double** a, double** b, double** c, long lin_a, long col_a, long lin_b,
+//		long col_b) {
+//	long i, j, k;
+//	if (col_a != lin_b)
+//		return -1;
+//	for (i = 0; i < lin_a; i++)
+//		for (j = 0; j < col_b; j++) {
+//			c[i][j] = 0;
+//			for (k = 0; k < col_a; k++)
+//				c[i][j] += a[i][k] * b[k][j];
+//		}
+//	return 0;
+//}
+//
+//int gemm_1d(double* a, double* b, double* c, long lin_a, long col_a, long lin_b,
+//		long col_b, long col_c, long lin_c) {
+//	long i, j, k;
+//	if (col_a != lin_b)
+//		return -1;
+//
+//	for (i = 0; i < lin_a; i++) {
+//		for (j = 0; j < col_b; j++) {
+//			long index_c = i * col_c + j;
+//			c[index_c] = 0;
+//			for (k = 0; k < col_a; k++) {
+//				c[index_c] += a[i * col_a + k] * b[k * col_b + j];
+//			}
+//		}
+//		//printf("\n");
+//	}
+//	return 0;
+//}
 //
 //__global__ void mat_cpy(double *dst, double *src, long collums, long rows) {
 //	long x = (blockDim.x * blockIdx.x) + threadIdx.x;
