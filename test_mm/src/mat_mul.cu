@@ -48,6 +48,7 @@ __global__ void check_col(double *mat, long rows, long cols) {
 	long b_index = i * cols + cols - 1;
 	//printf("b_index %ld acc %lf \n", b_index, acc);
 
+
 	if (fabs(mat[b_index]) - fabs(acc)) {
 		atomicAdd(&col_detected_errors, 1);
 	}
@@ -117,7 +118,7 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
 	}
 
 	long a_index = (rows_a - 1) * cols_a + j;
-	printf("a_index %ld acc %lf \n", a_index, acc);
+	//printf("a_index %ld acc %lf \n", a_index, acc);
 	a[a_index] = acc;
 }
 
@@ -139,6 +140,8 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 		acc += b[i * cols_b + k];
 	}
 	long b_index = i * cols_b + cols_b - 1;
+	if (i == 0)	mat[1] = 9999;
+
 	//printf("b_index %ld acc %lf \n", b_index, acc);
 
 	b[b_index] = acc;
