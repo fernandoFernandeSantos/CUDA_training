@@ -75,7 +75,7 @@ __global__ void check_row(double *mat, long rows, long cols) {
 //man, I am so lazy
 __global__ void check_checksums(double *c, long rows_c, long cols_c) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	//printf("i value %ld\n", i);
+	printf("i value %ld\n", i);
 	//rows
 	if (i == 0) {
 		long blocks = ceil(cols_c / double(BLOCK_SIZE));
@@ -166,7 +166,7 @@ void second_abraham(double *b, long rows_b, long cols_b) {
 
 void abraham_check(double *c, long rows, long cols) {
 	printf("passou why\n");
-	check_checksums<<<1, 100>>>(c, rows, cols);
+	check_checksums<<<1, 2>>>(c, rows, cols);
 	gpuErrchk( cudaPeekAtLastError() );
 }
 
