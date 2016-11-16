@@ -115,7 +115,7 @@ __global__ void first_abraham_op(double *a, long rows_a, long cols_a) {
 
 	long k;
 	double acc = 0;
-	for (k = 0; k < rows_a; k++) {
+	for (k = 0; k < rows_a - 1; k++) {
 		acc += a[k * cols_a + j];
 	}
 
@@ -138,7 +138,7 @@ __global__ void second_abraham_op(double *b, long rows_b, long cols_b) {
 
 	long k;
 	double acc = 0;
-	for (k = 0; k < cols_b; k++) {
+	for (k = 0; k < cols_b - 1; k++) {
 		acc += b[i * cols_b + k];
 	}
 	long b_index = i * cols_b + cols_b - 1;
@@ -325,7 +325,7 @@ void matrix_multiplication_abft() {
 	abraham_check(device_array_c, (lin_a + 1), (col_b + 1));
 
 	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,sizeof(int));
-	//cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int));
+	cudaMemcpyFromSymbol(&col_detected_errors_host, col_detected_errors,sizeof(int));
 	printf("Detected row errors: %d\nDetected collum errors %d\n", row_detected_errors_host, col_detected_errors_host);
 
 	//printf("compare matrices\n");
