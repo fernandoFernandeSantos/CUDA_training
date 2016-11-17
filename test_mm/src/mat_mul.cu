@@ -317,9 +317,11 @@ void matrix_multiplication_abft() {
 	long col_a = 10;
 	long lin_b = 10;
 	long col_b = 20;
+	long col_c = col_a;
+	long lin_c = lin_b;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
-	long vec_siz_c = ((lin_a) * (col_b));
+	long vec_siz_c = ((lin_c) * (col_c));
 	const long siz_a = vec_siz_a * sizeof(float);
 	const long siz_b = vec_siz_b * sizeof(float);
 	const long siz_c = vec_siz_c * sizeof(float);
@@ -355,7 +357,7 @@ void matrix_multiplication_abft() {
 	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
 	int row_detected_errors_host = 0, col_detected_errors_host = 0;
 
-	abraham_check(device_array_c, (lin_a), (col_b));
+	abraham_check(device_array_c, (lin_c), (col_c));
 
 	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,
 			sizeof(int));
