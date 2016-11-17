@@ -245,7 +245,6 @@ void compare(float *t, float *s, long siz) {
 	}
 }
 
-
 /**
  Matrix multiplication: C = A * B.
  Host code.
@@ -282,7 +281,7 @@ void compare(float *t, float *s, long siz) {
  V. Volkov and J. Demmel, "Benchmarking GPUs to tune dense linear algebra,"
  in Proc. 2008 ACM/IEEE Conf. on Supercomputing (SC '08),
  Piscataway, NJ: IEEE Press, 2008, pp. Art. 31:1-11.
-*/
+ */
 
 cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 		float *a, float *b, float *c) {
@@ -298,10 +297,12 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 //  lda == m
 //  ldb == k
 //  ldc == m
+//checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA, matrix_size.uiWA, &alpha, d_B, matrix_size.uiWB,
+	//d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
 
-	cublasStatus_t ret = cublasSgemm(handle,
-			CUBLAS_OP_N, CUBLAS_OP_N, height_b, width_a, width_b, &alpha, b, height_b, a, height_a, &beta, c,
-			height_a);
+	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, width_b,
+			height_a, width_a, &alpha, b, width_b, a, width_a, &beta, c,
+			width_b);
 
 	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas\n");
@@ -313,15 +314,13 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 20;
-	long col_a = 10;
-	long lin_b = 10;
-	long col_b = 20;
-	long col_c = col_a;
-	long lin_c = lin_b;
+	long lin_a = 2048;
+	long col_a = 1024;
+	long lin_b = 1024;
+	long col_b = 2048;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
-	long vec_siz_c = ((lin_c) * (col_c));
+	long vec_siz_c = ((lin_a) * (col_b));
 	const long siz_a = vec_siz_a * sizeof(float);
 	const long siz_b = vec_siz_b * sizeof(float);
 	const long siz_c = vec_siz_c * sizeof(float);
@@ -346,18 +345,18 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
-	printf("\n");
-	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
+//	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
+//	printf("\n");
+//	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
 
 	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
 			device_array_c);
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_c, lin_c, col_c, "GPU result mat");
+//	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
 	int row_detected_errors_host = 0, col_detected_errors_host = 0;
 
-	abraham_check(device_array_c, (lin_c), (col_c));
+	abraham_check(device_array_c, (lin_a), (col_b));
 
 	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,
 			sizeof(int));
