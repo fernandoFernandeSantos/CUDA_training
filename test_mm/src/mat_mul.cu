@@ -300,19 +300,8 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 //  ldc == m
 
 	cublasStatus_t ret = cublasSgemm(handle,
-									CUBLAS_OP_N,
-									CUBLAS_OP_N,
-									height_b,
-									width_a,
-									width_b,
-									&alpha,
-									b,
-									width_b,
-									a,
-									width_a,
-									&beta,
-									c,
-									width_b);
+			CUBLAS_OP_N, CUBLAS_OP_N, height_b, width_a, width_b, &alpha, b, height_b, a, height_a, &beta, c,
+			height_a);
 
 	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas\n");
@@ -324,10 +313,10 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 1024;
-	long col_a = 2048;
-	long lin_b = 2048;
-	long col_b = 1024;
+	long lin_a = 2048;
+	long col_a = 1024;
+	long lin_b = 1024;
+	long col_b = 2048;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
