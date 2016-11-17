@@ -34,7 +34,7 @@ __device__ int col_detected_errors = 0;
 #define VECTOR_SIZE_C ROWS_A * COLLUMS_B
 
 #define MAX_THRESHOLD  0.0001
-#define PRINT_TYPE long
+#define PRINT_TYPE double
 
 __global__ void check_col(float *mat, long rows, long cols) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -188,7 +188,7 @@ void print_mat_row_major(float *mat, long m, long n, const char *mat_name) {
 	long i, j;
 	for (i = 0; i < m; i++) {
 		for (j = 0; j < n; j++)
-			printf("%ld ", (PRINT_TYPE) mat[i * n + j]);
+			printf("%lf ", (PRINT_TYPE) mat[i * n + j]);
 		printf("\n");
 	}
 //	printf("on vector 1d\n");
