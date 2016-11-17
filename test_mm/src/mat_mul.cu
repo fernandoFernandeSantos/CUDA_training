@@ -227,7 +227,7 @@ void fill_mat_row_major(float *t, long m, long n) {
 	long i, j;
 	for (i = 0; i < m; i++)
 		for (j = 0; j < n; j++)
-			t[i * n + j] = 1; //float(i);
+			t[i * n + j] = (rand()  % 2000);
 }
 
 void fill_mat_collum_major(float *t, long m, long n) {
