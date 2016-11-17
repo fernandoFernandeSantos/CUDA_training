@@ -314,10 +314,10 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 10;
+	long lin_a = 5;
 	long col_a = 20;
 	long lin_b = 20;
-	long col_b = 5;
+	long col_b = 10;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
