@@ -354,7 +354,7 @@ void matrix_multiplication_abft() {
 			device_array_c);
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
+	print_mat_row_major(host_array_c, lin_c, col_c, "GPU result mat");
 	int row_detected_errors_host = 0, col_detected_errors_host = 0;
 
 	abraham_check(device_array_c, (lin_c), (col_c));
