@@ -245,6 +245,45 @@ void compare(float *t, float *s, long siz) {
 	}
 }
 
+
+/**
+ Matrix multiplication: C = A * B.
+ Host code.
+
+ This sample implements matrix multiplication as described in Chapter 3
+ of the programming guide and uses the CUBLAS library to demonstrate
+ the best performance.
+
+ SOME PRECAUTIONS:
+ IF WE WANT TO CALCULATE ROW-MAJOR MATRIX MULTIPLY C = A * B,
+ WE JUST NEED CALL CUBLAS API IN A REVERSE ORDER: cublasSegemm(B, A)!
+ The reason is explained as follows:
+
+ CUBLAS library uses column-major storage, but C/C++ use row-major storage.
+ When passing the matrix pointer to CUBLAS, the memory layout alters from
+ row-major to column-major, which is equivalent to an implicit transpose.
+
+ In the case of row-major C/C++ matrix A, B, and a simple matrix multiplication
+ C = A * B, we can't use the input order like cublasSgemm(A, B)  because of
+ implicit transpose. The actual result of cublasSegemm(A, B) is A(T) * B(T).
+ If col(A(T)) != row(B(T)), equal to row(A) != col(B), A(T) and B(T) are not
+ multipliable. Moreover, even if A(T) and B(T) are multipliable, the result C
+ is a column-based cublas matrix, which means C(T) in C/C++, we need extra
+ transpose code to convert it to a row-based C/C++ matrix.
+
+ To solve the problem, let's consider our desired result C, a row-major matrix.
+ In cublas format, it is C(T) actually (because of the implicit transpose).
+ C = A * B, so C(T) = (A * B) (T) = B(T) * A(T). Cublas matrice B(T) and A(T)
+ happen to be C/C++ matrice B and A (still because of the implicit transpose)!
+ We don't need extra transpose code, we only need alter the input order!
+
+ CUBLAS provides high-performance matrix multiplication.
+ See also:
+ V. Volkov and J. Demmel, "Benchmarking GPUs to tune dense linear algebra,"
+ in Proc. 2008 ACM/IEEE Conf. on Supercomputing (SC '08),
+ Piscataway, NJ: IEEE Press, 2008, pp. Art. 31:1-11.
+*/
+
 cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 		float *a, float *b, float *c) {
 	cublasHandle_t handle;
@@ -253,11 +292,14 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 	const float beta = 0;
 	//note cublas is column primary!
 	//need to transpose the order
-	//checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA,
-	//matrix_size.uiWA, &alpha, d_B, matrix_size.uiWB, d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
+//	m input	number of rows of matrix op(A) and C.
+//	n input	number of columns of matrix op(B) and C.
+//	k input number of columns of op(A) and rows of op(B).
+//  lda == m
+//  ldb == k
+//  ldc == m
 
-	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, width_b,
-			height_a, width_a, &alpha, b, width_b, a, width_a, &beta, c,
+	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, height_b, width_a, width_b, &alpha, b, width_b, a, width_a, &beta, c,
 			width_b);
 
 	if (CUBLAS_STATUS_SUCCESS != ret) {
