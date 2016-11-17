@@ -343,15 +343,15 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
-	printf("\n");
-	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
+//	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
+//	printf("\n");
+//	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
 
 	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
 			device_array_c);
 
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
+//	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
 	int row_detected_errors_host = 0, col_detected_errors_host = 0;
 
 	abraham_check(device_array_c, (lin_a), (col_b));
