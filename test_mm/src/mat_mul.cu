@@ -50,8 +50,8 @@ __global__ void check_col(float *mat, long rows, long cols) {
 	float diff = fabs(fabs(mat[b_index]) - fabs(acc));
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&col_detected_errors, 1);
-		printf("passou no col mat[%ld] = %ld diff %ld calc %ld i %ld\n",
-				b_index, (long) mat[b_index], (long) diff, (long) acc, i);
+//		printf("passou no col mat[%ld] = %ld diff %ld calc %ld i %ld\n",
+//				b_index, (long) mat[b_index], (long) diff, (long) acc, i);
 	}
 	//__syncthreads();
 }
@@ -70,8 +70,8 @@ __global__ void check_row(float *mat, long rows, long cols) {
 	float diff = fabs(fabs(mat[a_index]) - fabs(acc));
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
-		printf("passou no row mat[%ld] = %ld diff %ld calc %ld i value %ld\n",
-				a_index, (long) mat[a_index - 1], (long) diff, (long) acc, j);
+//		printf("passou no row mat[%ld] = %ld diff %ld calc %ld i value %ld\n",
+//				a_index, (long) mat[a_index - 1], (long) diff, (long) acc, j);
 	}
 	//__syncthreads();
 }
@@ -312,10 +312,10 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 1030;
-	long col_a = 1030;
-	long lin_b = 1030;
-	long col_b = 1030;
+	long lin_a = 2048;
+	long col_a = 2048;
+	long lin_b = 2048;
+	long col_b = 2048;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
