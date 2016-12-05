@@ -1,9 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <sys/time.h>
 #include "cuda_runtime.h"
 #include <cublas_v2.h>
 #include <math.h>
+
+inline double mysecond() {
+	struct timeval tp;
+	struct timezone tzp;
+	gettimeofday(&tp, &tzp);
+	return ((double) tp.tv_sec + (double) tp.tv_usec * 1.e-6);
+}
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 
@@ -22,32 +29,30 @@ __device__ int col_detected_errors = 0;
 
 #define BLOCK_SIZE 1024
 
-#define N 6
-#define ROWS_A N
-#define COLLUMS_A N
+#define DIV_VALUE 1e5
 
-#define ROWS_B N
-#define COLLUMS_B N
-
-#define VECTOR_SIZE_A COLLUMS_A * ROWS_A
-#define VECTOR_SIZE_B COLLUMS_B * ROWS_B
-#define VECTOR_SIZE_C ROWS_A * COLLUMS_B
-
-#define MAX_THRESHOLD  0.0001
+#define MAX_THRESHOLD  0.05
 #define PRINT_TYPE double
+
+__device__ inline long get_index(long i, long j, long n){
+	return i * n + j;
+}
 
 __global__ void check_col(float *mat, long rows, long cols) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
+	long b_index = i * cols + cols - 1;
+	if (cols == 1 || b_index > (rows * cols))
+		return;
 
 	long k;
-	float acc = 0;
+	double acc = 0;
 	//must be less one
 	for (k = 0; k < cols - 1; k++) {
-		acc += mat[i * cols + k];
+		acc += (mat[i * cols + k] / DIV_VALUE);
 	}
-	long b_index = i * cols + cols - 1;
+
 	//printf("b_index %ld acc %lf \n", b_index, acc);
-	float diff = fabs(fabs(mat[b_index]) - fabs(acc));
+	float diff = fabs(mat[b_index] - acc);
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&col_detected_errors, 1);
 //		printf("passou no col mat[%ld] = %ld diff %ld calc %ld i %ld\n",
@@ -58,48 +63,27 @@ __global__ void check_col(float *mat, long rows, long cols) {
 
 __global__ void check_row(float *mat, long rows, long cols) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
+	long a_index = (rows - 1) * cols + j;
+	if (rows == 1 || a_index > (rows * cols))
+		return;
 
 	long k;
-	float acc = 0;
+	double acc = 0;
 	//must be less one
 	for (k = 0; k < rows - 1; k++) {
-		acc += mat[k * cols + j];
+		acc += (mat[k * cols + j] / DIV_VALUE);
 	}
 	//printf("a_index %ld acc %lf \n", rows_a * cols_a + j, acc);
-	long a_index = (rows - 1) * cols + j;
-	float diff = fabs(fabs(mat[a_index]) - fabs(acc));
+
+	float diff = fabs(mat[a_index] - acc);
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
-//		printf("passou no row mat[%ld] = %ld diff %ld calc %ld i value %ld\n",
-//				a_index, (long) mat[a_index - 1], (long) diff, (long) acc, j);
+//		printf("passou no row mat[%ld] = %lf diff %lf calc %lf i value %ld\n",
+//				a_index, mat[a_index - 1], diff, acc, j);
 	}
 	//__syncthreads();
 }
 
-//DYNAMIC PARALLELISM ONLY TO CALL NEW KERNELS, ARE FUCK KIDDING???
-//man, I am so lazy
-__global__ void check_checksums(float *c, long rows_c, long cols_c) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	//printf("i value %ld\n", i);
-	//rows
-	if (i == 0) {
-		long blocks = ceil(float(cols_c) / float(BLOCK_SIZE));
-		long threads = ceil(float(cols_c) / float(blocks));
-		check_row<<<blocks, threads>>>(c, rows_c, cols_c);
-//		printf("cols %d blocks %ld threads %ld\n", cols_c, blocks, threads);
-	}
-	//cols
-	if (i == 1) {
-		long blocks = ceil(float(rows_c) / float(BLOCK_SIZE));
-		long threads = ceil(float(rows_c) / float(blocks));
-		check_col<<<blocks, threads>>>(c, rows_c, cols_c);
-		printf("blocks %ld threads %ld\n", blocks, threads);
-	}
-	//printf("passou aqui foi\n");
-
-	__syncthreads();
-	//printf("values %d %d\n ", row_detected_errors, col_detected_errors);
-}
 
 //since dgemm is optimized for square matrices I'm going to use
 //first ABRAHAM operation
@@ -114,15 +98,18 @@ __global__ void check_checksums(float *c, long rows_c, long cols_c) {
 //rows_b MUST BE THE SAME OF cols_a
 __global__ void first_abraham_op(float *a, long rows_a, long cols_a) {
 	long j = blockIdx.x * blockDim.x + threadIdx.x;
+	long a_index = get_index((rows_a - 1), j, cols_a);
+
+	if (rows_a == 1 || a_index > (rows_a * cols_a))
+		return;
 
 	long k;
-	float acc = 0;
+	double acc = 0;
 	for (k = 0; k < rows_a - 1; k++) {
-		acc += a[k * cols_a + j];
+		long index = get_index(k, j, cols_a);
+		acc += (a[index] / DIV_VALUE);
 	}
 
-	long a_index = (rows_a - 1) * cols_a + j;
-	//printf("a_index %ld acc %lf \n", a_index, acc);
 	a[a_index] = acc;
 }
 
@@ -137,53 +124,55 @@ __global__ void first_abraham_op(float *a, long rows_a, long cols_a) {
  */
 __global__ void second_abraham_op(float *b, long rows_b, long cols_b) {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
+	long b_index = get_index(i, cols_b - 1, cols_b);
+	if (rows_b == 1 || b_index > (rows_b * cols_b))
+		return;
 
 	long k;
-	float acc = 0;
+	double acc = 0;
 	for (k = 0; k < cols_b - 1; k++) {
-		acc += b[i * cols_b + k];
+		long index = get_index(i, k, cols_b);
+		acc += (b[index] / DIV_VALUE);
 	}
-	long b_index = i * cols_b + cols_b - 1;
-	//if (i == 0)	b[1] = 9999; //pseudo fault injection
-
-	//printf("b_index %ld acc %lf \n", b_index, acc);
-
 	b[b_index] = acc;
 }
 
-__global__ void calc_checksums(float *a, float *b, long rows_a, long cols_a,
+void check_checksums_from_host(float *c, long rows_c, long cols_c) {
+	long blocks = ceil(float(cols_c) / float(BLOCK_SIZE));
+	long threads = ceil(float(cols_c) / float(blocks));
+	check_row<<<blocks, threads>>>(c, rows_c, cols_c);
+	blocks = ceil(float(rows_c) / float(BLOCK_SIZE));
+	threads = ceil(float(rows_c) / float(blocks));
+	check_col<<<blocks, threads>>>(c, rows_c, cols_c);
+}
+
+
+void calc_checksums_from_host(float *a, float *b, long rows_a, long cols_a,
 		long rows_b, long cols_b) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	//printf("i value %ld\n", i);
-	//rows
-	if (i == 0) {
-		//1d grid for abft operations
-		long blocks = ceil(float(cols_a) / float(BLOCK_SIZE));
-		long threads = ceil(float(cols_a) / float(blocks));
-		first_abraham_op<<<blocks, threads>>>(a, rows_a, cols_a);
-	}
+	//1d grid for abft operations
+//	long *temp;
+//	long temp_host[cols_a];
+//	cudaMalloc(&temp, cols_a * sizeof(long));
 
-	if (i == 1) {
-		//second
-		long blocks = ceil(float(rows_b) / float(BLOCK_SIZE));
-		long threads = ceil(float(rows_b) / float(blocks));
-		second_abraham_op<<<blocks, threads>>>(b, rows_b, cols_b);
-	}
-	__syncthreads();
-}
+	long blocks = ceil(float(cols_a) / float(BLOCK_SIZE));
+	long threads = ceil(float(cols_a) / float(blocks));
 
-void abraham_sum(float *a, float *b, long rows_a, long cols_a, long rows_b,
-		long cols_b) {
-	calc_checksums<<<1, 2>>>(a, b, rows_a, cols_a, rows_b, cols_b);
-	gpuErrchk(cudaPeekAtLastError());
-}
+	first_abraham_op<<<blocks, threads>>>(a, rows_a, cols_a);
 
-void abraham_check(float *c, long rows, long cols) {
-	check_checksums<<<1, 2>>>(c, rows, cols);
-	gpuErrchk(cudaPeekAtLastError());
+//	cudaMemcpy(temp_host, temp, cols_a * sizeof(long), cudaMemcpyDeviceToHost);
+
+
+	printf("first blocks %ld threads %ld\n", blocks, threads);
+	//second
+	blocks = ceil(float(rows_b) / float(BLOCK_SIZE));
+	threads = ceil(float(rows_b) / float(blocks));
+	second_abraham_op<<<blocks, threads>>>(b, rows_b, cols_b);
+	printf("second blocks %ld threads %ld\n", blocks, threads);
 }
 
 void print_mat_row_major(float *mat, long m, long n, const char *mat_name) {
+	if (m * n > 5000)
+		return;
 	printf("ROW-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
 	long i, j;
 	for (i = 0; i < m; i++) {
@@ -198,24 +187,6 @@ void print_mat_row_major(float *mat, long m, long n, const char *mat_name) {
 	printf("\n");
 }
 
-void print_mat_collum_major(float *mat, long m, long n, const char *mat_name) {
-	printf("COLLUM-MAJOR ORDER: printing %s lin %ld col %ld\n", mat_name, m, n);
-	long i, j;
-	for (i = 0; i < m; i++) {
-
-		for (j = 0; j < n; j++) {
-			printf("%ld ", (PRINT_TYPE) mat[j * m + i]);
-		}
-		printf("\n");
-	}
-//	printf("on vector 1d\n");
-//	for (i = 0; i < m * n; i++) {
-//		printf("%ld ", (PRINT_TYPE) mat[i]);
-//	}
-	printf("\n");
-
-}
-
 void fill_mat(float* t, long n) {
 	long i;
 	for (i = 0; i < n; i++) {
@@ -227,15 +198,9 @@ void fill_mat_row_major(float *t, long m, long n) {
 	long i, j;
 	for (i = 0; i < m; i++)
 		for (j = 0; j < n; j++)
-			t[i * n + j] = (i * j) /(rand()  % 10 + 1);
+			t[i * n + j] = 1; //((rand() % 15) / 3.14578);
 }
 
-void fill_mat_collum_major(float *t, long m, long n) {
-	long i, j;
-	for (i = 0; i < m; i++)
-		for (j = 0; j < n; j++)
-			t[j * m + i] = float(i);
-}
 void compare(float *t, float *s, long siz) {
 	long i;
 	for (i = 0; i < siz; i++) {
@@ -299,10 +264,11 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 //  ldc == m
 //checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA, matrix_size.uiWA, &alpha, d_B, matrix_size.uiWB,
 	//d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
-
+	int lda = width_a;
+	int ldb = width_b;
+	int ldc = width_b;
 	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, width_b,
-			height_a, width_a, &alpha, b, width_b, a, width_a, &beta, c,
-			width_b);
+			height_a, width_a, &alpha, b, ldb, a, lda, &beta, c, ldc);
 
 	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas\n");
@@ -314,10 +280,10 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 20;
-	long col_a = 24;
-	long lin_b = 24;
-	long col_b = 15;
+	long lin_a = 2005;//96;
+	long col_a = 1255;//48;
+	long lin_b = col_a;//48;
+	long col_b = 1402;//92;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
@@ -341,12 +307,16 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
 
-	abraham_sum(device_array_a, device_array_b, lin_a, col_a, lin_b, col_b);
+	double time_from_host = mysecond();
+	calc_checksums_from_host(device_array_a, device_array_b, lin_a, col_a,
+			lin_b, col_b);
+	printf("Calc checksums time calling from host %lf\n",
+			mysecond() - time_from_host);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
 	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
-	printf("\n");
+
 	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
 
 	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
@@ -356,7 +326,10 @@ void matrix_multiplication_abft() {
 	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
 	int row_detected_errors_host = 0, col_detected_errors_host = 0;
 
-	abraham_check(device_array_c, (lin_a), (col_b));
+	time_from_host = mysecond();
+	check_checksums_from_host(device_array_c, (lin_a), (col_b));
+	printf("Final check time calling from host %lf\n",
+			mysecond() - time_from_host);
 
 	cudaMemcpyFromSymbol(&row_detected_errors_host, row_detected_errors,
 			sizeof(int));
@@ -364,6 +337,7 @@ void matrix_multiplication_abft() {
 			sizeof(int));
 	printf("Detected row errors: %d\nDetected collum errors %d\n",
 			row_detected_errors_host, col_detected_errors_host);
+	printf("\n");
 
 	gpuErrchk(cudaDeviceSynchronize());
 	free(host_array_a);
