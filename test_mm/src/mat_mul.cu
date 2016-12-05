@@ -42,8 +42,8 @@ __device__ ErrorReturn err_count;
 
 
 /* Finds the sum of all elements in the row excluding the element at eRow and the checksum element */
-__global__ float exclRowSum(int row, int col, int rows, int cols, int **matrix) {
-    long i ;
+__global__ float excl_row_sum(float *mat, long rows, long cols, long error_row, long error_col) {
+    long i = blockIdx.x * blockDim.x + threadIdx.x;
     float sum = 0;
     if (matrix == NULL)
         errExit("Matrix is NULL. Cannot sum.");
@@ -62,16 +62,18 @@ __global__ float exclRowSum(int row, int col, int rows, int cols, int **matrix) 
 }
 
 /* Finds the sum of all elements in the col excluding the element at eRow and the checksum element */
-int exclColSum(float *mat, long rows, long cols, long error_row, long error_col) {
-    long i = blockIdx.x * blockDim.x + threadIdx.x;
+int excl_col_sum(float *mat, long rows, long cols, long error_row) {
+    long j = blockIdx.x * blockDim.x + threadIdx.x;
     int sum = 0;
-    if (mat == NULL || error_row > rows || error_col > cols)
+    if (mat == NULL || error_row > rows)
     	atomicAdd(&err_count.error_status, 1);
-
+    long i;
     for (i = 0; i < rows - 1; i++) {
-        /* if i is not the trouble row */
-        if (i != error_row)
-            sum += mat[i][col];
+        /* if j is not the trouble row */
+        if (i != error_row){
+        	long index = get_index(i, j, cols);
+        	sum += mat[index];
+        }
     }
     return sum;
 }
