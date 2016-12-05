@@ -24,8 +24,59 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 	}
 }
 
-__device__ int row_detected_errors = 0;
-__device__ int col_detected_errors = 0;
+//__device__ int row_detected_errors = 0;
+//__device__ int col_detected_errors = 0;
+
+typedef struct erro_return {
+	long* row_detected_errors;
+	long* col_detected_errors;
+
+	long* row_detected_errors_gpu;
+	long* col_detected_errors_gpu;
+
+	int error_status;
+} ErrorReturn;
+
+__device__ ErrorReturn err_count;
+
+
+
+/* Finds the sum of all elements in the row excluding the element at eRow and the checksum element */
+__global__ float exclRowSum(int row, int col, int rows, int cols, int **matrix) {
+    long i ;
+    float sum = 0;
+    if (matrix == NULL)
+        errExit("Matrix is NULL. Cannot sum.");
+    if (row >= rows) {
+        errExit("Error row exceeds the number of rows.");
+    }
+    else if (col >= cols) {
+        errExit("Error column exceeds the number of columns.");
+    }
+    for (i = 0; i < cols - 1; i++) {
+        /* if i is not the trouble column */
+        if (i != col)
+            sum += matrix[row][i];
+    }
+    return sum;
+}
+
+/* Finds the sum of all elements in the col excluding the element at eRow and the checksum element */
+int exclColSum(float *mat, long rows, long cols, long error_row, long error_col) {
+    long i = blockIdx.x * blockDim.x + threadIdx.x;
+    int sum = 0;
+    if (mat == NULL || error_row > rows || error_col > cols)
+    	atomicAdd(&err_count.error_status, 1);
+
+    for (i = 0; i < rows - 1; i++) {
+        /* if i is not the trouble row */
+        if (i != error_row)
+            sum += mat[i][col];
+    }
+    return sum;
+}
+
+
 
 #define BLOCK_SIZE 1024
 
