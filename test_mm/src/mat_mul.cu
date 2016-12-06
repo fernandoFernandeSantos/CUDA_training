@@ -125,10 +125,10 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 2005;//96;
-	long col_a = 1255;//48;
+	long lin_a = 20;//05;//96;
+	long col_a = 12;//55;//48;
 	long lin_b = col_a;//48;
-	long col_b = 1402;//92;
+	long col_b = 14;//02;//92;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
@@ -166,18 +166,19 @@ void matrix_multiplication_abft() {
 	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
 			device_array_c);
 
-	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
-	int row_detected_errors_host = 0, col_detected_errors_host = 0;
 
-	time_from_host = mysecond();
-	check_checksums_from_host(device_array_c, lin_a, col_b);
+	ErrorReturn temp = check_checksums_from_host(device_array_c, lin_a, col_b);
+	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
+		time_from_host = mysecond();
+	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
+
+
 	printf("Final check time calling from host %lf\n",
 			mysecond() - time_from_host);
 
 
 	printf("Detected row errors: %d\nDetected collum errors %d\n",
-			row_detected_errors_host, col_detected_errors_host);
+			temp.row_detected_errors, temp.col_detected_errors);
 	printf("\n");
 
 	gpuErrchk(cudaDeviceSynchronize());
@@ -188,6 +189,7 @@ void matrix_multiplication_abft() {
 	cudaFree(device_array_a);
 	cudaFree(device_array_b);
 	cudaFree(device_array_c);
+	free_error_return(&temp);
 }
 
 int main(void) {
