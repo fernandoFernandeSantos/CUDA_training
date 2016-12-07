@@ -14,7 +14,7 @@
 
 #define BLOCK_SIZE 1024
 
-#define DIV_VALUE 1e5
+#define DIV_VALUE 1e0 //5
 
 typedef struct erro_return {
 	long rows;

@@ -74,7 +74,7 @@ void compare(float *t, float *s, long siz) {
 
  In the case of row-major C/C++ matrix A, B, and a simple matrix multiplication
  C = A * B, we can't use the input order like cublasSgemm(A, B)  because of
- implicit transpose. The actual result of cublasSegemm(A, B) is A(T) * B(T).
+ implicit transpose. The actual result of cublasSegemm(A, B) is A(T) * B-(T).
  If col(A(T)) != row(B(T)), equal to row(A) != col(B), A(T) and B(T) are not
  multipliable. Moreover, even if A(T) and B(T) are multipliable, the result C
  is a column-based cublas matrix, which means C(T) in C/C++, we need extra
