@@ -28,17 +28,17 @@ void print_col_detected_errors(const ErrorReturn& ret) {
 	printf("\n");
 }
 
-ErrorReturn new_error_return(long rows, long cols) {
+ErrorReturn new_error_return(long_t rows, long_t cols) {
 	ErrorReturn ret;
-	ret.siz_r = sizeof(long);
-	ret.siz_c = sizeof(long);
+	ret.siz_r = sizeof(long_t);
+	ret.siz_c = sizeof(long_t);
 	ret.byte_siz_r = ret.siz_r * rows;
 	ret.byte_siz_c = ret.siz_c * cols;
 	ret.cols = cols;
 	ret.rows = rows;
 	//host side
-	ret.col_detected_errors_host = (long*) calloc(cols, ret.siz_c);
-	ret.row_detected_errors_host = (long*) calloc(rows, ret.siz_r);
+	ret.col_detected_errors_host = (long_t*) calloc(cols, ret.siz_c);
+	ret.row_detected_errors_host = (long_t*) calloc(rows, ret.siz_r);
 	if (ret.col_detected_errors_host == NULL
 			|| ret.row_detected_errors_host == NULL) {
 		exit(-1);
@@ -46,9 +46,9 @@ ErrorReturn new_error_return(long rows, long cols) {
 
 	//device side
 	cudaMalloc(&ret.col_detected_errors_gpu, ret.byte_siz_c);
-	cudaMemset(&ret.col_detected_errors_gpu, 0, ret.byte_siz_c);
+	//cudaMemset(&ret.col_detected_errors_gpu, 0, ret.byte_siz_c);
 	cudaMalloc(&ret.row_detected_errors_gpu, ret.byte_siz_r);
-	cudaMemset(&ret.row_detected_errors_gpu, 0, ret.byte_siz_r);
+	//cudaMemset(&ret.row_detected_errors_gpu, 0, ret.byte_siz_r);
 	cudaMalloc(&ret.col_err_gpu, ret.byte_siz_c);
 	cudaMalloc(&ret.row_err_gpu, ret.byte_siz_r);
 	gpuErrchk(cudaDeviceSynchronize());
@@ -95,175 +95,120 @@ int get_use_abft() {
 
 __device__ ErrorReturn err_count;
 
-__device__ inline long get_index(long i, long j, long n) {
+__device__ inline long_t get_index(long_t i, long_t j, long_t n) {
 	return i * n + j;
 }
 
+/**
+ * check all collums if they are right
+ * input
+ * mat resulting matrix
+ * rows mat rows
+ * cols mat cols
+ * error vector
+ * check all colluns against checksum
+ * NUM OF THREADS MUST BE THE SAME AS COLLUMS
+ * */
+__global__ void check_cols(float *mat, long_t rows, long_t cols,
+		long_t *col_detected_errors_gpu) {
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+	col_detected_errors_gpu[j] = 0;
+	long_t mat_index = get_index((rows - 1), j, cols);
+
+	if (rows == 1 || mat_index > (rows * cols))
+		mat[0] = 0;
+
+	long_t k;
+	double acc = 0;
+	for (k = 0; k < rows - 1; k++) {
+		long_t index = get_index(k, j, cols);
+		acc += (mat[index] / DIV_VALUE);
+	}
+
+//	mat[mat_index] = acc;
+	//printf("b_index %ld acc %lf \n", b_index, acc);
+	float diff = fabs(mat[mat_index] - acc);
+	if (diff >= MAX_THRESHOLD) {
+		atomicAdd(&col_detected_errors, 1);
+		col_detected_errors_gpu[j] = j;
+		//printf("foi %ld\n", j);
+	}else{
+		col_detected_errors_gpu[j] = -1;
+	}
+
+	//__syncthreads();
+}
+
+/*check all rows against checksum*/
+__global__ void check_rows(float *mat, long_t rows, long_t cols,
+		long_t *row_detected_errors_gpu) {
+	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
+	row_detected_errors_gpu[i] = 0;
+	long_t mat_index = get_index(i, cols - 1, cols);
+	if (rows == 1 || mat_index > (rows * cols))
+		return;
+
+	long_t k;
+	double acc = 0;
+	for (k = 0; k < cols - 1; k++) {
+		long_t index = get_index(i, k, cols);
+		acc += (mat[index] / DIV_VALUE);
+	}
+	//printf("a_index %ld acc %lf \n", rows_a * cols_a + i, acc);
+
+	float diff = fabs(mat[mat_index] - acc);
+	if (diff >= MAX_THRESHOLD) {
+		atomicAdd(&row_detected_errors, 1);
+		row_detected_errors_gpu[i] = i;
+//		printf("passou no row mat[%ld] = %lf diff %lf calc %lf i value %ld\n",
+//				a_index, mat[a_index - 1], diff, acc, j);
+	}else{
+		row_detected_errors_gpu[i] = -1;
+	}
+	//__syncthreads();
+}
+
+//**********************************************************************************
+
 /* Finds the sum of all elements in the row excluding the element at eRow and the checksum element */
-__global__ void excl_row_sum(float *mat, long rows, long cols, float *sum,
-		long err_row) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	*sum = 0;
+__global__ void excl_row_sum(float *mat, long_t rows, long_t cols, float *sum, long_t err_row) {
+	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (mat == NULL || err_row >= rows)
 		return;
-	long k;
+	long_t k;
 	for (k = 0; k < cols - 1; k++) {
 		/* if i is not the trouble column */
 		if (i != err_row) {
-			long index = get_index(i, k, cols);
-			(*sum) += mat[index];
+			long_t index = get_index(i, k, cols);
+			atomicAdd(sum, mat[index]);
 		}
 	}
 }
 
-/* Finds the sum of all elements in the col excluding the element at eRow and the checksum element */
-__global__ void excl_col_sum(float *mat, long rows, long cols, float *sum,
-		long err_col) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	*sum = 0;
+/* Finds the sum of all elements in the col excluding the element at eRow and the checksum element
+ * err_col will be calculated here, avoiding memory copy
+ * -- the parameters are
+ * mat
+ * rows
+ * cols
+ * col_detected_errors_gpu
+ * col_detected_errors
+ * */
+
+__global__ void excl_col_sum(float *mat, long_t rows, long_t cols, float *sum, long_t err_col) {
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	if (mat == NULL || err_col > cols)
 		return;
-	long k;
+	long_t k;
 	for (k = 0; k < rows - 1; k++) {
 		/* if j is not the trouble row */
 		if (j != err_col) {
-			long index = get_index(k, j, cols);
-			(*sum) += mat[index];
+			long_t index = get_index(k, j, cols);
+			atomicAdd(sum, mat[index]);
 		}
 	}
 }
-
-/**
- * check all collums if they are right
- * input
- * mat resulting matrix
- * rows mat rows
- * cols mat cols
- * error vector
- * check all colluns against checksum
- * NUM OF THREADS MUST BE THE SAME AS COLLUMS
- * */
-__global__ void check_cols(float *mat, long rows, long cols, long *col_detected_errors_gpu) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	col_detected_errors_gpu[j] = 0;
-	long mat_index = get_index((rows - 1), j, cols);
-
-	if (rows == 1 || mat_index > (rows * cols))
-		mat[0] = 0;
-
-	long k;
-	double acc = 0;
-	for (k = 0; k < rows - 1; k++) {
-		long index = get_index(k, j, cols);
-		acc += (mat[index] / DIV_VALUE);
-	}
-
-//	mat[mat_index] = acc;
-	//printf("b_index %ld acc %lf \n", b_index, acc);
-	float diff = fabs(mat[mat_index] - acc);
-	if (diff >= MAX_THRESHOLD) {
-		atomicAdd(&col_detected_errors, 1);
-		col_detected_errors_gpu[j] = j;
-		printf("foi %ld\n", j);
-	}
-
-	//__syncthreads();
-}
-
-/*check all rows against checksum*/
-__global__ void check_rows(float *mat, long rows, long cols, long *row_detected_errors_gpu) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	row_detected_errors_gpu[i] = 0;
-	long mat_index = get_index(i, cols - 1, cols);
-	if (rows == 1 || mat_index > (rows * cols))
-		return;
-
-	long k;
-	double acc = 0;
-	for (k = 0; k < cols - 1; k++) {
-		long index = get_index(i, k, cols);
-		acc += (mat[index] / DIV_VALUE);
-	}
-	//printf("a_index %ld acc %lf \n", rows_a * cols_a + i, acc);
-
-	float diff = fabs(mat[mat_index] - acc);
-	if (diff >= MAX_THRESHOLD) {
-		atomicAdd(&row_detected_errors, 1);
-		row_detected_errors_gpu[i] = i;
-//		printf("passou no row mat[%ld] = %lf diff %lf calc %lf i value %ld\n",
-//				a_index, mat[a_index - 1], diff, acc, j);
-	}
-	//__syncthreads();
-}
-
-
-//**********************************************************************************
-/**
- * check all collums if they are right
- * input
- * mat resulting matrix
- * rows mat rows
- * cols mat cols
- * error vector
- * check all colluns against checksum
- * NUM OF THREADS MUST BE THE SAME AS COLLUMS
- * */
-__global__ void correct_cols(float *mat, long rows, long cols, long *col_detected_errors_gpu) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	col_detected_errors_gpu[j] = 0;
-	long mat_index = get_index((rows - 1), j, cols);
-
-	if (rows == 1 || mat_index > (rows * cols))
-		mat[0] = 0;
-
-	long k;
-	double acc = 0;
-	for (k = 0; k < rows - 1; k++) {
-		long index = get_index(k, j, cols);
-		acc += (mat[index] / DIV_VALUE);
-	}
-
-//	mat[mat_index] = acc;
-	//printf("b_index %ld acc %lf \n", b_index, acc);
-	float diff = fabs(mat[mat_index] - acc);
-	if (diff >= MAX_THRESHOLD) {
-		atomicAdd(&col_detected_errors, 1);
-		col_detected_errors_gpu[j] = j;
-		printf("foi %ld\n", j);
-	}
-
-	//__syncthreads();
-}
-
-/*check all rows against checksum*/
-__global__ void correct_rows(float *mat, long rows, long cols, long *row_detected_errors_gpu) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	row_detected_errors_gpu[i] = 0;
-	long mat_index = get_index(i, cols - 1, cols);
-	if (rows == 1 || mat_index > (rows * cols))
-		return;
-
-	long k;
-	double acc = 0;
-	for (k = 0; k < cols - 1; k++) {
-		long index = get_index(i, k, cols);
-		acc += (mat[index] / DIV_VALUE);
-	}
-	//printf("a_index %ld acc %lf \n", rows_a * cols_a + i, acc);
-
-	float diff = fabs(mat[mat_index] - acc);
-	if (diff >= MAX_THRESHOLD) {
-		atomicAdd(&row_detected_errors, 1);
-		row_detected_errors_gpu[i] = i;
-//		printf("passou no row mat[%ld] = %lf diff %lf calc %lf i value %ld\n",
-//				a_index, mat[a_index - 1], diff, acc, j);
-	}
-	//__syncthreads();
-}
-
 //###############################################################################
-
-
 
 //first ABRAHAM operation
 //	for (j = 0; j < col_a; j++) {
@@ -275,17 +220,17 @@ __global__ void correct_rows(float *mat, long rows, long cols, long *row_detecte
 //        a[lin_a * col_a + j] = acc;
 //	}
 //rows_b MUST BE THE SAME OF cols_a
-__global__ void calc_collum_checksum(float *mat, long rows, long cols) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
-	long mat_index = get_index((rows - 1), j, cols);
+__global__ void calc_collum_checksum(float *mat, long_t rows, long_t cols) {
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+	long_t mat_index = get_index((rows - 1), j, cols);
 
 	if (rows == 1 || mat_index > (rows * cols))
 		mat[0] = 0;
 
-	long k;
+	long_t k;
 	double acc = 0;
 	for (k = 0; k < rows - 1; k++) {
-		long index = get_index(k, j, cols);
+		long_t index = get_index(k, j, cols);
 		acc += (mat[index] / DIV_VALUE);
 	}
 
@@ -294,45 +239,105 @@ __global__ void calc_collum_checksum(float *mat, long rows, long cols) {
 
 /**
  * 	for (i = 0; i < lin_b; i++) {
-		 acc = 0;
-		 for (j = 0; j < col_b; j++){
-			 acc += b[i * (col_b + 1) + j];
-		 }
-		 b[i * (col_b + 1) + col_b] = acc;
+ acc = 0;
+ for (j = 0; j < col_b; j++){
+ acc += b[i * (col_b + 1) + j];
+ }
+ b[i * (col_b + 1) + col_b] = acc;
 
  }
  */
-__global__ void calc_row_checksum(float *mat, long rows, long cols) {
-	long i = blockIdx.x * blockDim.x + threadIdx.x;
-	long b_index = get_index(i, cols - 1, cols);
+__global__ void calc_row_checksum(float *mat, long_t rows, long_t cols) {
+	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
+	long_t b_index = get_index(i, cols - 1, cols);
 	if (rows == 1 || b_index > (rows * cols))
 		return;
 
-	long k;
+	long_t k;
 	double acc = 0;
 	for (k = 0; k < cols - 1; k++) {
-		long index = get_index(i, k, cols);
+		long_t index = get_index(i, k, cols);
 		acc += (mat[index] / DIV_VALUE);
 	}
 	mat[b_index] = acc;
 }
-
-
 
 __global__ void fault_injection(float *mat, int pos) {
 	mat[pos] = (pos * 5000);
 }
 
 __global__ void fault_injection_collum(float *mat, int col, int i) {
-	long j = blockIdx.x * blockDim.x + threadIdx.x;
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	mat[i * col + j] = i * j;
 
 }
 
-ErrorReturn check_checksums_from_host(float *c, long rows_c, long cols_c) {
+
+//		col = colE[0];
+//		if (rowErrors > rows) {
+//			errExit("Row errors exceeds rows.");
+//		}
+//		/* Assumes rowE is in order */
+//		for (i = 0; i < rowErrors; i++) {
+//			row = rowE[i];
+//			sum = exclRowSum(row, col, rows, cols, matrix);
+//			/* Not checksum column */
+//			if (col != cols - 1) {
+//				/* sum of row excluding the current element */
+//				matrix[row][col] = matrix[row][cols - 1] - sum;
+//			} else {
+//				matrix[row][col] = sum;
+//			}
+//			(*nCorrected)++;
+//		}
+__global__ void correct_row_device(float *mat, long_t *rows_to_correct, long_t col_err, long_t rows, lont_t cols){
+	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
+	long_t row_e = rows_to_correct[i];
+	if (row_e != -1){
+
+	}
+}
+
+//		row = rowE[0];
+//		col = colE[0];
+//		sum = exclRowSum(row, col, rows, cols, matrix);
+//		/* not a checksum */
+//		if (col != cols - 1) {
+//			/* sum of row excluding the current element */
+//
+//			matrix[row][col] = matrix[row][cols - 1] - sum;
+//		} else { /* fix last column */
+//			matrix[row][col] = sum;
+//		}
+//		(*nCorrected)++;
+		//get the sum with excl_rowsum
+unsigned char correct_row_host(float *mat, long_t *rows_to_correct, long_t rows, long_t cols, long_t errors_to_corect){
+	unsigned char ret = 1;
+	float *row_sum_vector;
+	float *col_sum_vector;
+	long_t siz_csv = sizeof(float) * cols;
+	long_t siz_rsv = sizeof(float) * rows;
+
+	cudaMalloc(&row_sum_vector, siz_rsv);
+	cudaMalloc
+	//iterate in all positions on row_to_correct
+	//call everyone, even it's not wrong, it is easier
+	long_t blocks = ceil(float(rows) / float(BLOCK_SIZE));
+	long_t threads = ceil(float(rows) / float(blocks));
+
+	correct_row_device<<<blocks, threads>>>(mat, rows_to_correct, rows, cols);
+
+
+	cudaFree(row_sum_vector);
+	return ret;
+}
+
+
+
+ErrorReturn check_checksums_from_host(float *c, long_t rows_c, long_t cols_c) {
 	ErrorReturn ret = new_error_return(rows_c, cols_c);
-	long blocks = ceil(float(cols_c) / float(BLOCK_SIZE));
-	long threads = ceil(float(cols_c) / float(blocks));
+	long_t blocks_cols = ceil(float(cols_c) / float(BLOCK_SIZE));
+	long_t threads_cols = ceil(float(cols_c) / float(blocks));
 
 #ifdef FI
 	int i;
@@ -344,36 +349,82 @@ ErrorReturn check_checksums_from_host(float *c, long rows_c, long cols_c) {
 			ret.col_detected_errors_gpu);
 	gpuErrchk(cudaDeviceSynchronize());
 
-	blocks = ceil(float(rows_c) / float(BLOCK_SIZE));
-	threads = ceil(float(rows_c) / float(blocks));
+	long_t blocks_rows = ceil(float(rows_c) / float(BLOCK_SIZE));
+	long_t threads_rows = ceil(float(rows_c) / float(blocks));
 	check_rows<<<blocks, threads>>>(c, rows_c, cols_c,
 			ret.row_detected_errors_gpu);
 
 	gpuErrchk(cudaDeviceSynchronize());
-
 	cpy_from_device(&ret);
+	ret.could_correct = 1;
+	//**************************************************************
+	/* Single error */
+	if (ret.row_detected_errors == 1 && ret.col_detected_errors == 1) {
+
+	} else if (ret.row_detected_errors >= 2 && ret.col_detected_errors == 1) {
+//		col = colE[0];
+//		if (rowErrors > rows) {
+//			errExit("Row errors exceeds rows.");
+//		}
+//		/* Assumes rowE is in order */
+//		for (i = 0; i < rowErrors; i++) {
+//			row = rowE[i];
+//			sum = exclRowSum(row, col, rows, cols, matrix);
+//			/* Not checksum column */
+//			if (col != cols - 1) {
+//				/* sum of row excluding the current element */
+//				matrix[row][col] = matrix[row][cols - 1] - sum;
+//			} else {
+//				matrix[row][col] = sum;
+//			}
+//			(*nCorrected)++;
+//		}
+	} else if (ret.col_detected_errors >= 2 && ret.row_detected_errors == 1) {
+//		row = rowE[0];
+//		if (colErrors > cols) {
+//			errExit("Column errors exceeds columns.");
+//		}
+//		/* Assumes colE is in order */
+//		for (i = 0; i < colErrors; i++) {
+//			col = colE[i];
+//			/* sum of row excluding the current element */
+//			sum = exclColSum(row, col, rows, cols, matrix);
+//			if (row != rows - 1) {
+//				matrix[row][col] = matrix[rows - 1][col] - sum;
+//
+//			} else {
+//				matrix[row][col] = sum;
+//			}
+//			(*nCorrected)++;
+//		}
+	} else {
+		ret.could_correct = 0;
+	}
+	//**************************************************************
+
+
 	print_row_detected_errors(ret);
 	print_col_detected_errors(ret);
 	return ret;
 }
 
-void calc_checksums_from_host(float *a, float *b, long rows_a, long cols_a,
-		long rows_b, long cols_b) {
+void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
+		long_t rows_b, long_t cols_b) {
 	//1d grid for abft operations
-//	long *temp;
-//	long temp_host[cols_a];
-//	cudaMalloc(&temp, cols_a * sizeof(long));
-	long blocks = ceil(float(cols_a) / float(BLOCK_SIZE));
-	long threads = ceil(float(cols_a) / float(blocks));
+//	long_t *temp;
+//	long_t temp_host[cols_a];
+//	cudaMalloc(&temp, cols_a * sizeof(long_t));
+	long_t blocks = ceil(float(cols_a) / float(BLOCK_SIZE));
+	long_t threads = ceil(float(cols_a) / float(blocks));
 	calc_collum_checksum<<<blocks, threads>>>(a, rows_a, cols_a);
-//	cudaMemcpy(temp_host, temp, cols_a * sizeof(long), cudaMemcpyDeviceToHost);
+//	cudaMemcpy(temp_host, temp, cols_a * sizeof(long_t), cudaMemcpyDeviceToHost);
 	printf("first blocks %ld threads %ld\n", blocks, threads);
 	//second
 	blocks = ceil(float(rows_b) / float(BLOCK_SIZE));
 	threads = ceil(float(rows_b) / float(blocks));
 	calc_row_checksum<<<blocks, threads>>>(b, rows_b, cols_b);
 	printf("second blocks %ld threads %ld\n", blocks, threads);
-//	long row_detected_errors_host, col_detected_errors_host;
+//	long_t row_detected_errors_host, col_detected_errors_host;
 //
 //	cudaMemcpyFromSymbol(&row_detected_errors_host, err_count.row_detected_errors,
 //			sizeof(int));
