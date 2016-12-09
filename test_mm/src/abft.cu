@@ -9,7 +9,6 @@ int use_abft = 0;
 __device__ int row_detected_errors = 0;
 __device__ int col_detected_errors = 0;
 
-
 void print_row_detected_errors(const ErrorReturn& ret) {
 	int t;
 	printf("Row detected errors rows_c %ld\n", ret.rows);
@@ -95,7 +94,7 @@ int get_use_abft() {
 
 __device__ ErrorReturn err_count;
 
-__device__ inline long_t get_index(long_t i, long_t j, long_t n) {
+__device__  inline long_t get_index(long_t i, long_t j, long_t n) {
 	return i * n + j;
 }
 
@@ -132,7 +131,7 @@ __global__ void check_cols(float *mat, long_t rows, long_t cols,
 		atomicAdd(&col_detected_errors, 1);
 		col_detected_errors_gpu[j] = j;
 		//printf("foi %ld\n", j);
-	}else{
+	} else {
 		col_detected_errors_gpu[j] = -1;
 	}
 
@@ -143,7 +142,7 @@ __global__ void check_cols(float *mat, long_t rows, long_t cols,
 __global__ void check_rows(float *mat, long_t rows, long_t cols,
 		long_t *row_detected_errors_gpu) {
 	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
-	row_detected_errors_gpu[i] = 0;
+
 	long_t mat_index = get_index(i, cols - 1, cols);
 	if (rows == 1 || mat_index > (rows * cols))
 		return;
@@ -159,10 +158,11 @@ __global__ void check_rows(float *mat, long_t rows, long_t cols,
 	float diff = fabs(mat[mat_index] - acc);
 	if (diff >= MAX_THRESHOLD) {
 		atomicAdd(&row_detected_errors, 1);
+		printf("\nthread %ld\n", i);
 		row_detected_errors_gpu[i] = i;
 //		printf("passou no row mat[%ld] = %lf diff %lf calc %lf i value %ld\n",
 //				a_index, mat[a_index - 1], diff, acc, j);
-	}else{
+	} else {
 		row_detected_errors_gpu[i] = -1;
 	}
 	//__syncthreads();
@@ -171,7 +171,8 @@ __global__ void check_rows(float *mat, long_t rows, long_t cols,
 //**********************************************************************************
 
 /* Finds the sum of all elements in the row excluding the element at eRow and the checksum element */
-__global__ void excl_row_sum(float *mat, long_t rows, long_t cols, float *sum, long_t err_row) {
+__global__ void excl_row_sum(float *mat, long_t rows, long_t cols, float *sum,
+		long_t err_row) {
 	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (mat == NULL || err_row >= rows)
 		return;
@@ -185,6 +186,22 @@ __global__ void excl_row_sum(float *mat, long_t rows, long_t cols, float *sum, l
 	}
 }
 
+__device__ float excl_row_sum_seq(float *mat, long_t rows, long_t cols,
+		long_t wrong_row) {
+	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
+	float sum = 0;
+	if (mat == NULL || wrong_row >= rows)
+		return sum;
+	long_t k;
+	for (k = 0; k < cols - 1; k++) {
+		/* if i is not the trouble column */
+		if (i != wrong_row) {
+			long_t index = get_index(i, k, cols);
+			sum += mat[index];
+		}
+	}
+	return sum;
+}
 /* Finds the sum of all elements in the col excluding the element at eRow and the checksum element
  * err_col will be calculated here, avoiding memory copy
  * -- the parameters are
@@ -195,18 +212,37 @@ __global__ void excl_row_sum(float *mat, long_t rows, long_t cols, float *sum, l
  * col_detected_errors
  * */
 
-__global__ void excl_col_sum(float *mat, long_t rows, long_t cols, float *sum, long_t err_col) {
+__global__ void excl_col_sum(float *mat, long_t rows, long_t cols, float *sum,
+		long_t err_col) {
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	if (mat == NULL || err_col > cols)
 		return;
 	long_t k;
+	//for (k = 0; k < rows - 1; k++) {
+	/* if j is not the trouble row */
+	if (j != err_col) {
+		long_t index = get_index(k, j, cols);
+		atomicAdd(sum, mat[index]);
+	}
+	//}
+}
+
+__device__ float excl_col_sum_seq(float *mat, long_t rows, long_t cols,
+		long_t wrong_col) {
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+	float sum = 0;
+	if (mat == NULL || wrong_col > cols)
+		return sum;
+	long_t k;
 	for (k = 0; k < rows - 1; k++) {
 		/* if j is not the trouble row */
-		if (j != err_col) {
+		if (j != wrong_col) {
 			long_t index = get_index(k, j, cols);
-			atomicAdd(sum, mat[index]);
+			sum += mat[index];
+			//atomicAdd(sum, mat[index]);
 		}
 	}
+	return sum;
 }
 //###############################################################################
 
@@ -272,7 +308,6 @@ __global__ void fault_injection_collum(float *mat, int col, int i) {
 
 }
 
-
 //		col = colE[0];
 //		if (rowErrors > rows) {
 //			errExit("Row errors exceeds rows.");
@@ -290,28 +325,61 @@ __global__ void fault_injection_collum(float *mat, int col, int i) {
 //			}
 //			(*nCorrected)++;
 //		}
-__global__ void correct_row_device(float *mat, long_t *rows_to_correct, long_t col_err, long_t rows, lont_t cols){
+__global__ void correct_row_device(float *mat, long_t *rows_to_correct,
+		long_t *wrong_col, long_t rows, long_t cols) {
 	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
 	long_t row_e = rows_to_correct[i];
-	if (row_e != -1){
-
+	if (row_e != -1) {
+		float sum = excl_col_sum_seq(mat, rows, cols, *wrong_col);
+		printf("sum %lf i == %ld\n", sum, i);
+		long_t index = get_index(row_e, *wrong_col, cols);
+		if (*wrong_col != cols - 1) {
+			long_t index_e = get_index(row_e, cols - 1, cols);
+			mat[index] = mat[index_e] - sum;
+		} else {
+			mat[index] = sum;
+		}
 	}
 }
 
-//		row = rowE[0];
-//		col = colE[0];
-//		sum = exclRowSum(row, col, rows, cols, matrix);
-//		/* not a checksum */
-//		if (col != cols - 1) {
-//			/* sum of row excluding the current element */
+//row = rowE[0];
+//if (colErrors > cols) {
+//    errExit("Column errors exceeds columns.");
+//}
+///* Assumes colE is in order */
+//for (i = 0; i < colErrors; i++) {
+//    col = colE[i];
+//    /* sum of row excluding the current element */
+//    sum = exclColSum(row, col, rows, cols, matrix);
+//    if (row != rows - 1) {
+//        matrix[row][col] = matrix[rows - 1][col] - sum;
 //
-//			matrix[row][col] = matrix[row][cols - 1] - sum;
-//		} else { /* fix last column */
-//			matrix[row][col] = sum;
-//		}
-//		(*nCorrected)++;
-		//get the sum with excl_rowsum
-unsigned char correct_row_host(float *mat, long_t *rows_to_correct, long_t rows, long_t cols, long_t errors_to_corect){
+//    }
+//    else {
+//        matrix[row][col] = sum;
+//    }
+//    (*nCorrected)++;
+//}
+__global__ void correct_col_device(float *mat, long_t *cols_to_correct,
+		long_t *wrong_row, long_t rows, long_t cols) {
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+	long_t col_e = cols_to_correct[j];
+	printf("%d\n", *wrong_row);
+	if (col_e != -1) {
+		float sum = excl_row_sum_seq(mat, rows, cols, col_e);
+		long_t index = get_index((*wrong_row), col_e, cols);
+
+		if ((*wrong_row) != rows - 1) {
+			long index_e = get_index(rows - 1, col_e, cols);
+			mat[index] = mat[index_e] - sum;
+		} else {
+			mat[index] = sum;
+		}
+	}
+}
+
+unsigned char correct_host(float *mat, long_t rows, long_t cols,
+		ErrorReturn *error) {
 	unsigned char ret = 1;
 	float *row_sum_vector;
 	float *col_sum_vector;
@@ -319,90 +387,66 @@ unsigned char correct_row_host(float *mat, long_t *rows_to_correct, long_t rows,
 	long_t siz_rsv = sizeof(float) * rows;
 
 	cudaMalloc(&row_sum_vector, siz_rsv);
-	cudaMalloc
+	cudaMalloc(&col_sum_vector, siz_csv);
 	//iterate in all positions on row_to_correct
 	//call everyone, even it's not wrong, it is easier
-	long_t blocks = ceil(float(rows) / float(BLOCK_SIZE));
-	long_t threads = ceil(float(rows) / float(blocks));
+	long_t blocks_rows = ceil(float(rows) / float(BLOCK_SIZE));
+	long_t threads_rows = ceil(float(rows) / float(blocks_rows));
+	long_t blocks_cols = ceil(float(rows) / float(BLOCK_SIZE));
+	long_t threads_cols = ceil(float(rows) / float(blocks_cols));
 
-	correct_row_device<<<blocks, threads>>>(mat, rows_to_correct, rows, cols);
+	//**************************************************************
+	/* Single error */
+	printf("\n\npassou aqui row errors %ld col errors %ld\n\n",
+			error->row_detected_errors, error->col_detected_errors);
+	if (error->row_detected_errors == 1 && error->col_detected_errors == 1) {
 
+//		correct_row_device<<<1,1>>>(mat, rows_to_correct, )
+	} else if (error->row_detected_errors >= 2
+			&& error->col_detected_errors == 1) {
+		correct_row_device<<<blocks_rows, threads_rows>>>(mat,
+				error->row_detected_errors_gpu,
+				error->col_detected_errors_gpu + error->row_detected_errors,
+				rows, cols);
 
+	} else if (error->col_detected_errors >= 2
+			&& error->row_detected_errors == 1) {
+		correct_col_device<<<blocks_cols, threads_cols>>>(mat,
+				error->col_detected_errors_gpu,
+				error->row_detected_errors_gpu + error->row_detected_errors,
+				rows, cols);
+	} else {
+		error->could_correct = 0;
+	}
 	cudaFree(row_sum_vector);
+	cudaFree(col_sum_vector);
 	return ret;
 }
-
-
 
 ErrorReturn check_checksums_from_host(float *c, long_t rows_c, long_t cols_c) {
 	ErrorReturn ret = new_error_return(rows_c, cols_c);
 	long_t blocks_cols = ceil(float(cols_c) / float(BLOCK_SIZE));
-	long_t threads_cols = ceil(float(cols_c) / float(blocks));
+	long_t threads_cols = ceil(float(cols_c) / float(blocks_cols));
 
 #ifdef FI
 	int i;
 //	for(i = 0; i < rows_c - 2; i++){
-	fault_injection_collum<<<blocks, threads / 2>>>(c, cols_c, 2);
+	fault_injection_collum<<<blocks_cols, threads_cols / 2>>>(c, cols_c, 2);
 //	}
 #endif
-	check_cols<<<blocks, threads>>>(c, rows_c, cols_c,
+	check_cols<<<blocks_cols, threads_cols>>>(c, rows_c, cols_c,
 			ret.col_detected_errors_gpu);
 	gpuErrchk(cudaDeviceSynchronize());
 
 	long_t blocks_rows = ceil(float(rows_c) / float(BLOCK_SIZE));
-	long_t threads_rows = ceil(float(rows_c) / float(blocks));
-	check_rows<<<blocks, threads>>>(c, rows_c, cols_c,
+	long_t threads_rows = ceil(float(rows_c) / float(blocks_cols));
+	check_rows<<<blocks_rows, threads_rows>>>(c, rows_c, cols_c,
 			ret.row_detected_errors_gpu);
 
 	gpuErrchk(cudaDeviceSynchronize());
 	cpy_from_device(&ret);
-	ret.could_correct = 1;
-	//**************************************************************
-	/* Single error */
-	if (ret.row_detected_errors == 1 && ret.col_detected_errors == 1) {
 
-	} else if (ret.row_detected_errors >= 2 && ret.col_detected_errors == 1) {
-//		col = colE[0];
-//		if (rowErrors > rows) {
-//			errExit("Row errors exceeds rows.");
-//		}
-//		/* Assumes rowE is in order */
-//		for (i = 0; i < rowErrors; i++) {
-//			row = rowE[i];
-//			sum = exclRowSum(row, col, rows, cols, matrix);
-//			/* Not checksum column */
-//			if (col != cols - 1) {
-//				/* sum of row excluding the current element */
-//				matrix[row][col] = matrix[row][cols - 1] - sum;
-//			} else {
-//				matrix[row][col] = sum;
-//			}
-//			(*nCorrected)++;
-//		}
-	} else if (ret.col_detected_errors >= 2 && ret.row_detected_errors == 1) {
-//		row = rowE[0];
-//		if (colErrors > cols) {
-//			errExit("Column errors exceeds columns.");
-//		}
-//		/* Assumes colE is in order */
-//		for (i = 0; i < colErrors; i++) {
-//			col = colE[i];
-//			/* sum of row excluding the current element */
-//			sum = exclColSum(row, col, rows, cols, matrix);
-//			if (row != rows - 1) {
-//				matrix[row][col] = matrix[rows - 1][col] - sum;
-//
-//			} else {
-//				matrix[row][col] = sum;
-//			}
-//			(*nCorrected)++;
-//		}
-	} else {
-		ret.could_correct = 0;
-	}
-	//**************************************************************
-
-
+	correct_host(c, rows_c, cols_c, &ret);
 	print_row_detected_errors(ret);
 	print_col_detected_errors(ret);
 	return ret;
