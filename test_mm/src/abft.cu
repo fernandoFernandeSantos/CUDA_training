@@ -188,16 +188,16 @@ __global__ void excl_row_sum(float *mat, long_t rows, long_t cols, float *sum,
 }
 
 __device__ float excl_row_sum_seq(float *mat, long_t rows, long_t cols,
-		long_t wrong_row) {
-	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
+		long_t wrong_row, long_t wrong_col) {
+	//long_t i = blockIdx.x * blockDim.x + threadIdx.x;
 	float sum = 0;
-	if (mat == NULL || wrong_row >= rows)
+	if (mat == NULL || wrong_row >= rows || wrong_col >= cols)
 		return sum;
 	long_t k;
 	for (k = 0; k < cols - 1; k++) {
 		/* if i is not the trouble column */
-		if (i != wrong_row) {
-			long_t index = get_index(i, k, cols);
+		if (k != wrong_row) {
+			long_t index = get_index(wrong_col, k, cols);
 			sum += mat[index];
 		}
 	}
@@ -375,17 +375,17 @@ __global__ void correct_col_device(float *mat, long_t *cols_to_correct, long_t *
 	long_t col_e = cols_to_correct[j];
 	long_t row_e = rows_to_correct[i];
 	if (col_e != -1 && row_e != -1) {
-		float sum = excl_row_sum_seq(mat, rows, cols, col_e);
+		float sum = excl_col_sum_seq(mat, rows, cols, row_e, col_e);
 		long_t index = get_index(row_e, col_e, cols);
 
 		if (row_e != rows - 1) {
 			long index_e = get_index(rows - 1, col_e, cols);
-			printf("mat[index] %lf sum %ld\n", mat[index], sum);
+			printf("mat[index] %lf sum %lf\n", mat[index], sum);
 
 			mat[index] = mat[index_e] - sum;
 		} else {
 			mat[index] = sum;
-			printf("passou onde não podia\n");
+			//printf("passou onde não podia\n");
 		}
 	}
 }
