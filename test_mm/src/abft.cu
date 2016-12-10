@@ -150,16 +150,10 @@ __global__ void check_rows(float *mat, long_t rows, long_t cols,
 	long_t k;
 	double acc = 0;
 	for (k = 0; k < cols - 1; k++) {
-
 		long_t index = get_index(i, k, cols);
-		if(i == 2){
-			printf("%ld ", index);
-		}
 		acc += (mat[index] / DIV_VALUE);
 	}
-	if(i == 2){
-		printf("\n");
-	}
+
 	//printf("a_index %ld acc %lf \n", rows_a * cols_a + i, acc);
 
 	float diff = fabs(mat[mat_index] - acc);
@@ -333,14 +327,18 @@ __global__ void fault_injection_collum(float *mat, int col, int i) {
 //			(*nCorrected)++;
 //		}
 __global__ void correct_row_device(float *mat, long_t *rows_to_correct,
-		long_t *wrong_col, long_t rows, long_t cols) {
-	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
+		long_t *cols_to_correct, long_t rows, long_t cols) {
+	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+
 	long_t row_e = rows_to_correct[i];
-	if (row_e != -1) {
-		float sum = excl_col_sum_seq(mat, rows, cols, *wrong_col);
+	long_t col_e = cols_to_correct[j];
+
+	if (row_e != -1 && col_e != -1) {
+		float sum = excl_col_sum_seq(mat, rows, cols, col_e);
 		printf("sum %lf i == %ld\n", sum, i);
-		long_t index = get_index(row_e, *wrong_col, cols);
-		if (*wrong_col != cols - 1) {
+		long_t index = get_index(row_e, col_e, cols);
+		if (col_e != cols - 1) {
 			long_t index_e = get_index(row_e, cols - 1, cols);
 			mat[index] = mat[index_e] - sum;
 		} else {
@@ -367,16 +365,17 @@ __global__ void correct_row_device(float *mat, long_t *rows_to_correct,
 //    }
 //    (*nCorrected)++;
 //}
-__global__ void correct_col_device(float *mat, long_t *cols_to_correct,
-		long_t *wrong_row, long_t rows, long_t cols) {
+__global__ void correct_col_device(float *mat, long_t *cols_to_correct, long_t *rows_to_correct, long_t rows, long_t cols) {
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
-	long_t col_e = cols_to_correct[j];
-	printf("%d\n", *wrong_row);
-	if (col_e != -1) {
-		float sum = excl_row_sum_seq(mat, rows, cols, col_e);
-		long_t index = get_index((*wrong_row), col_e, cols);
+	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 
-		if ((*wrong_row) != rows - 1) {
+	long_t col_e = cols_to_correct[j];
+	long_t row_e = rows_to_correct[i];
+	if (col_e != -1 && row_e != -1) {
+		float sum = excl_row_sum_seq(mat, rows, cols, col_e);
+		long_t index = get_index(row_e, col_e, cols);
+
+		if (row_e != rows - 1) {
 			long index_e = get_index(rows - 1, col_e, cols);
 			mat[index] = mat[index_e] - sum;
 		} else {
@@ -402,26 +401,27 @@ unsigned char correct_host(float *mat, long_t rows, long_t cols,
 	long_t blocks_cols = ceil(float(rows) / float(BLOCK_SIZE));
 	long_t threads_cols = ceil(float(rows) / float(blocks_cols));
 
+	dim3 blocks(blocks_rows, blocks_cols);
+	dim3 threads(threads_rows, threads_cols);
 	//**************************************************************
 	/* Single error */
-	printf("\n\npassou aqui row errors %ld col errors %ld\n\n",
+	printf("\n\npassou aqui row errors %d col errors %d\n\n",
 			error->row_detected_errors, error->col_detected_errors);
 	if (error->row_detected_errors == 1 && error->col_detected_errors == 1) {
 
 //		correct_row_device<<<1,1>>>(mat, rows_to_correct, )
 	} else if (error->row_detected_errors >= 2
 			&& error->col_detected_errors == 1) {
-		correct_row_device<<<blocks_rows, threads_rows>>>(mat,
-				error->row_detected_errors_gpu,
-				error->col_detected_errors_gpu + error->row_detected_errors,
-				rows, cols);
 
+		correct_row_device<<<blocks, threads>>>(mat,
+				error->row_detected_errors_gpu, error->col_detected_errors_gpu, rows, cols);
+		gpuErrchk(cudaDeviceSynchronize());
 	} else if (error->col_detected_errors >= 2
 			&& error->row_detected_errors == 1) {
-		correct_col_device<<<blocks_cols, threads_cols>>>(mat,
+		correct_col_device<<<blocks, threads>>>(mat,
 				error->col_detected_errors_gpu,
-				error->row_detected_errors_gpu + error->row_detected_errors,
-				rows, cols);
+				error->row_detected_errors_gpu, rows, cols);
+		gpuErrchk(cudaDeviceSynchronize());
 	} else {
 		error->could_correct = 0;
 	}
