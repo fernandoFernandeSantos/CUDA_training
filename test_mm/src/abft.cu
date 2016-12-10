@@ -229,15 +229,15 @@ __global__ void excl_col_sum(float *mat, long_t rows, long_t cols, float *sum,
 }
 
 __device__ float excl_col_sum_seq(float *mat, long_t rows, long_t cols,
-		long_t wrong_col) {
+		long_t wrong_row) {
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	float sum = 0;
-	if (mat == NULL || wrong_col > cols)
+	if (mat == NULL || wrong_row > rows)
 		return sum;
 	long_t k;
 	for (k = 0; k < rows - 1; k++) {
 		/* if j is not the trouble row */
-		if (j != wrong_col) {
+		if (j != wrong_row) {
 			long_t index = get_index(k, j, cols);
 			sum += mat[index];
 			//atomicAdd(sum, mat[index]);
@@ -335,7 +335,7 @@ __global__ void correct_row_device(float *mat, long_t *rows_to_correct,
 	long_t col_e = cols_to_correct[j];
 
 	if (row_e != -1 && col_e != -1) {
-		float sum = excl_col_sum_seq(mat, rows, cols, col_e);
+		float sum = excl_col_sum_seq(mat, rows, cols, row_e);
 		printf("sum %lf i == %ld\n", sum, i);
 		long_t index = get_index(row_e, col_e, cols);
 		if (col_e != cols - 1) {
