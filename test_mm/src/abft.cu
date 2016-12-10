@@ -371,7 +371,7 @@ __global__ void correct_col_device(float *mat, long_t *cols_to_correct, long_t *
 
 		if (row_e != rows - 1) {
 			long index_e = get_index(rows - 1, col_e, cols);
-			printf("i %ld j %ld mat[index] %lf sum %lf\n", mat[index], sum);
+			printf("row_e %ld col_e %ld i %ld j %ld mat[index] %lf sum %lf\n", row_e, col_e, i, j, mat[index], sum);
 
 			mat[index] = mat[index_e] - sum;
 		} else {
