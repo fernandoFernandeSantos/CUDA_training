@@ -371,7 +371,7 @@ __global__ void correct_col_device(float *mat, long_t *cols_to_correct, long_t *
 
 	if(i >= rows && j >= cols)
 		return;
-	printf("i %ld j %ld\n", i, j);
+
 
 	long_t col_e = cols_to_correct[j];
 	long_t row_e = rows_to_correct[i];
@@ -382,8 +382,10 @@ __global__ void correct_col_device(float *mat, long_t *cols_to_correct, long_t *
 		if (row_e != rows - 1) {
 			long index_e = get_index(rows - 1, col_e, cols);
 			mat[index] = mat[index_e] - sum;
+			printf("i %ld j %ld\n", i, j);
 		} else {
 			mat[index] = sum;
+			printf("passou onde não podia\n");
 		}
 	}
 }
