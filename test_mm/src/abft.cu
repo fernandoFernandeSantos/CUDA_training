@@ -376,7 +376,7 @@ __global__ void correct_col_device(float *mat, long_t *cols_to_correct, long_t *
 	long_t col_e = cols_to_correct[j];
 	long_t row_e = rows_to_correct[i];
 	if (col_e != -1 && row_e != -1) {
-		float sum = excl_row_sum_seq(mat, rows, cols, col_e);
+		float sum = excl_col_sum_seq(mat, rows, cols, col_e);
 		long_t index = get_index(row_e, col_e, cols);
 
 		if (row_e != rows - 1) {
