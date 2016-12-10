@@ -369,6 +369,9 @@ __global__ void correct_col_device(float *mat, long_t *cols_to_correct, long_t *
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 	printf("i %ld j %ld\n", i, j);
+	if(i >= rows && j >= cols)
+		return;
+
 	long_t col_e = cols_to_correct[j];
 	long_t row_e = rows_to_correct[i];
 	if (col_e != -1 && row_e != -1) {
