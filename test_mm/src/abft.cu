@@ -150,8 +150,15 @@ __global__ void check_rows(float *mat, long_t rows, long_t cols,
 	long_t k;
 	double acc = 0;
 	for (k = 0; k < cols - 1; k++) {
+
 		long_t index = get_index(i, k, cols);
+		if(i == 2){
+			printf("%ld ", index);
+		}
 		acc += (mat[index] / DIV_VALUE);
+	}
+	if(i == 2){
+		printf("\n");
 	}
 	//printf("a_index %ld acc %lf \n", rows_a * cols_a + i, acc);
 

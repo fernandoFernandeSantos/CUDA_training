@@ -16,7 +16,8 @@
 
 #define DIV_VALUE 1e0 //5
 
-typedef  long long_t;
+typedef long long_t;
+typedef float float_t;
 
 typedef struct erro_return {
 	long_t rows;
@@ -49,14 +50,14 @@ typedef struct erro_return {
 typedef struct DeviceErrorCounters{
 	int row_detected_errors;
 	int col_detected_errors;
-	float sum;
+	float_t sum;
 
 	long_t* row_detected_errors_gpu;
 	long_t* col_detected_errors_gpu;
 } DeviceErrorCounters;
 
-void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,long_t rows_b, long_t cols_b);
-ErrorReturn check_checksums_from_host(float *c, long_t rows_c, long_t cols_c);
+void calc_checksums_from_host(float_t *a, float_t *b, long_t rows_a, long_t cols_a,long_t rows_b, long_t cols_b);
+ErrorReturn check_checksums_from_host(float_t *c, long_t rows_c, long_t cols_c);
 
 
 void set_use_abft(int n);
