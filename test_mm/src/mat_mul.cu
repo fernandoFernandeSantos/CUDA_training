@@ -102,24 +102,24 @@ void matrix_multiplication_abft() {
 	cudaMalloc(&check_col, col_b * sizeof(float_t));
 	cudaMalloc(&check_row, lin_a * sizeof(float_t));
 	h_check_col = (float*) calloc(col_b, sizeof(float));
-	h_check_row = (float*) calloc(lin_a, sizeof(float));
+	h_check_row = (float*) calloc(col_a, sizeof(float));
 
 	float_t *dev_mat;
 	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
 
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_check_row, check_row, col_a * sizeof(float_t), cudaMemcpyDeviceToHost);
 
 	int i = 0;
 	printf("Vetor saida colunas\n");
-	for(i =0; i < col_b; i++){
+	for(i = 0; i < col_b; i++){
 		printf("%lf ", h_check_col[i]);
 	}
 
 	printf("\n");
 	printf("Vetor saida linhas\n");
-	for(i =0; i < lin_a; i++){
+	for(i =0; i < col_a; i++){
 		printf("%lf ", h_check_row[i]);
 	}
 
