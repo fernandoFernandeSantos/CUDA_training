@@ -529,8 +529,8 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 	cudaMalloc(&check_row, rows_a * sizeof(float_t));
 
 	//dgemm for each one
-	dgemm_host(cols_a, rows_a, 1, rows_a, mat_a, dev_mat, check_row);
-	dgemm_host(cols_b, cols_a, cols_b, 1, dev_mat, mat_b, check_col);
+	dgemm_host(cols_a, rows_a, 1, rows_a, dev_mat, mat_a, check_row);
+	dgemm_host(cols_b, cols_a, cols_b, 1, mat_b, dev_mat, check_col);
 
 	//place_col<<<>>>(check_col, )
 
