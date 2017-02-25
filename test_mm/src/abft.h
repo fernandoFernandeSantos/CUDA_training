@@ -9,6 +9,12 @@
 #define ABFT_H_
 
 #include <stdio.h>
+#include "cuda_runtime.h"
+#include <cublas_v2.h>
+cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
+		float *a, float *b, float *c);
+
+
 
 #define MAX_THRESHOLD  0.05
 
@@ -78,6 +84,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 
 void free_error_return(ErrorReturn*);
-
+void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
+		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
+		long_t cols_b);
 
 #endif /* ABFT_H_ */
