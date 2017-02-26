@@ -31,18 +31,11 @@ void print_mat_row_major(float *mat, long m, long n, const char *mat_name) {
 	printf("\n");
 }
 
-void fill_mat(float* t, long n) {
-	long i;
-	for (i = 0; i < n; i++) {
-		t[i] = 1;
-	}
-}
-
-void fill_mat_row_major(float *t, long m, long n) {
+void fill_mat_row_major(float_t *t, float_t val, long m, long n) {
 	long i, j;
 	for (i = 0; i < m; i++)
 		for (j = 0; j < n; j++)
-			t[i * n + j] = 1; //((rand() % 15) / 3.14578);
+			t[i * n + j] = val; //((rand() % 15) / 3.14578);
 }
 
 void compare(float *t, float *s, long siz) {
@@ -73,8 +66,8 @@ void matrix_multiplication_abft() {
 	float* host_array_b = (float*) calloc(vec_siz_b, sizeof(float));
 	float* host_array_c = (float*) calloc(vec_siz_c, sizeof(float));
 //	float* host_array_c_temp = (float*) calloc(vec_siz_c, sizeof(float));
-	fill_mat_row_major(host_array_a, lin_a, col_a);
-	fill_mat_row_major(host_array_b, lin_b, col_b);
+	fill_mat_row_major(host_array_a, 1.0, lin_a, col_a);
+	fill_mat_row_major(host_array_b, 2.0, lin_b, col_b);
 
 	//cuda memories
 	float *device_array_a, *device_array_b, *device_array_c;
