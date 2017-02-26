@@ -51,10 +51,10 @@ void inline print_array(float_t *arr, long_t n){ int i; for (i = 0; i < n; i++) 
 void inline fill_array(float_t *arr, float_t val, long_t n){ int i; for (i = 0; i < n; i++) arr[i] = val;}
 
 void matrix_multiplication_abft() {
-	long lin_a = 20;//05;//96;
-	long col_a = 12;//55;//48;
+	long lin_a = 2005;//96;
+	long col_a = 1255;//48;
 	long lin_b = col_a;//48;
-	long col_b = 14;//02;//92;
+	long col_b = 1402;//92;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
@@ -122,16 +122,16 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
 
 	printf("Vetor saida colunas\n");
-	print_array(h_check_col, col_b +1);
+	print_array(h_check_col, col_b);
 
 	printf("Vetor saida linhas\n");
-	print_array(h_check_row, lin_a +1);
+	print_array(h_check_row, lin_a);
 
 	printf("\n");
 
-//	cudaFree(dev_mat);
-//	cudaFree(check_col);
-//	cudaFree(check_row);
+	cudaFree(dev_mat);
+	cudaFree(check_col);
+	cudaFree(check_row);
 
 
 	//
