@@ -1,6 +1,9 @@
 //extern "C" {
 #include "abft.h"
 #include <stdio.h>
+#include "cuda.h"
+#include "cublas_v2.h"
+#include "cusparse_v2.h"
 //}
 
 //extern "C" {
@@ -511,6 +514,7 @@ __global__ void place_row(float_t *checksum, float_t *mat, long_t rows,
 
 }
 
+
 void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
 		long_t cols_b) {
@@ -523,7 +527,7 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 		max = cols_b;
 
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
-	cudaMemset(dev_mat, 1.0, max * sizeof(float_t));
+	cuMemsetD32(CUdeviceptr(dev_mat), 1.0, max * sizeof(float_t));
 
 	cudaMalloc(&check_col, cols_b * sizeof(float_t));
 	cudaMalloc(&check_row, cols_a * sizeof(float_t));
