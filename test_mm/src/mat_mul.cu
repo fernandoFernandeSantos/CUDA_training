@@ -83,8 +83,7 @@ void matrix_multiplication_abft() {
 	printf("Calc checksums time calling from host %lf\n",
 			mysecond() - time_from_host);
 
-	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
-	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
+
 
 
 
@@ -114,7 +113,13 @@ void matrix_multiplication_abft() {
 	fill_array(h_dev_mat, 1.0, max);
 
 	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max, cudaMemcpyHostToDevice);
+
+
 	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
+
+	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
+
 	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
 
 	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
@@ -168,11 +173,11 @@ void matrix_multiplication_abft() {
 	cudaFree(device_array_b);
 	cudaFree(device_array_c);
 
-	free(h_check_col);
-	free(h_check_row);
-	cudaFree(dev_mat);
-	cudaFree(check_col);
-	cudaFree(check_row);
+//	free(h_check_col);
+//	free(h_check_row);
+//	cudaFree(dev_mat);
+//	cudaFree(check_col);
+//	cudaFree(check_row);
 	free_error_return(&temp);
 }
 

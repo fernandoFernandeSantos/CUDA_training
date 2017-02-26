@@ -529,7 +529,6 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 
 	place_col<<<blocks_a, threads_per_block_a>>>(check_row,mat_a, rows_a, cols_a);
 
-
 }
 
 /**
