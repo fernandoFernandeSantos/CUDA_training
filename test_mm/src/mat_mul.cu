@@ -117,7 +117,7 @@ void matrix_multiplication_abft() {
 	cudaMemset(dev_mat, 1, max * sizeof(float_t));
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_check_row, dev_mat, col_a * sizeof(float_t), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_check_row, dev_mat, max * sizeof(float_t), cudaMemcpyDeviceToHost);
 
 	int i = 0;
 	printf("Vetor saida colunas\n");
