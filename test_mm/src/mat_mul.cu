@@ -112,6 +112,7 @@ void matrix_multiplication_abft() {
 
 	if (col_b > lin_a)
 		max = col_b;
+	printf("max %ld\n", max);
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
 	cudaMemset(dev_mat, 1, max * sizeof(float_t));
 
