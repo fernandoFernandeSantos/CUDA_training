@@ -114,12 +114,18 @@ void matrix_multiplication_abft() {
 		max = col_b;
 	printf("max %ld\n", max);
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
-	cudaMemset(dev_mat, 1, max * sizeof(float_t));
+	float_t *h_dev_mat = (float*) calloc(max, sizeof(float));
+	int i = 0;
+
+	for (i = 0; i < max; i++){
+		h_dev_mat[i] = 1;
+	}
+
+	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max, cudaMemcpyHostToDevice);
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_check_row, dev_mat, max * sizeof(float_t), cudaMemcpyDeviceToHost);
 
-	int i = 0;
 	printf("Vetor saida colunas\n");
 	for(i = 0; i < col_b; i++){
 		printf("%lf ", h_check_col[i]);
