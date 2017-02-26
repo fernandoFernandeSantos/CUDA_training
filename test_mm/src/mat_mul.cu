@@ -54,6 +54,7 @@ void compare(float *t, float *s, long siz) {
 	}
 }
 
+void inline print_array(float_t *arr, long_t n){ int i; for (i = 0; i < n; i++) printf("%lf ", arr[i]); printf("\n");}
 
 void matrix_multiplication_abft() {
 	long lin_a = 20;//05;//96;
@@ -124,18 +125,13 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max, cudaMemcpyHostToDevice);
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_check_row, dev_mat, max * sizeof(float_t), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
 
 	printf("Vetor saida colunas\n");
-	for(i = 0; i < col_b; i++){
-		printf("%lf ", h_check_col[i]);
-	}
+	print_array(h_check_col, col_b);
 
-	printf("\n");
 	printf("Vetor saida linhas\n");
-	for(i =0; i < col_a; i++){
-		printf("%lf ", h_check_row[i]);
-	}
+	print_array(h_check_row, max);
 
 	printf("\n");
 

@@ -535,7 +535,7 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 
 	//dgemm for each one
 	dgemm_host(cols_a, rows_a, cols_a, 1, mat_a, dev_mat, check_row);
-//	dgemm_host(cols_b, cols_a, 1,cols_b , mat_b, dev_mat, check_col);
+	dgemm_host(cols_b, cols_a, 1,cols_b , mat_b, dev_mat, check_col);
 
 	//place_col<<<>>>(check_col, )
 
