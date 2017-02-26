@@ -527,7 +527,7 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 		max = cols_b;
 
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
-	cuMemsetD32(CUdeviceptr(dev_mat), 1.0, max * sizeof(float_t));
+	cudaMemset(dev_mat, 1, max * sizeof(float_t));
 
 	cudaMalloc(&check_col, cols_b * sizeof(float_t));
 	cudaMalloc(&check_row, cols_a * sizeof(float_t));
