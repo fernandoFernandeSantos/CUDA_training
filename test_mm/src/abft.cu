@@ -529,6 +529,10 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 
 	place_col<<<blocks_a, threads_per_block_a>>>(check_row,mat_a, rows_a, cols_a);
 
+	long_t blocks_b = ceil(float(cols_a * cols_b) / float(BLOCK_SIZE * BLOCK_SIZE));
+	dim3 threads_per_block_b = dim3(cols_b, cols_a);
+
+	place_row<<<blocks_b, threads_per_block_b>>>(check_col, mat_b, cols_a, cols_b);
 }
 
 /**
