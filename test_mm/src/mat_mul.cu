@@ -55,6 +55,7 @@ void compare(float *t, float *s, long siz) {
 }
 
 void inline print_array(float_t *arr, long_t n){ int i; for (i = 0; i < n; i++) printf("%lf ", arr[i]); printf("\n");}
+void inline fill_array(float_t *arr, float_t val, long_t n){ int i; for (i = 0; i < n; i++) arr[i] = val;}
 
 void matrix_multiplication_abft() {
 	long lin_a = 20;//05;//96;
@@ -106,7 +107,7 @@ void matrix_multiplication_abft() {
 	h_check_row = (float*) calloc(col_a, sizeof(float));
 
 	float_t *dev_mat;
-//	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
+
 	long_t max = col_a;
 	if (lin_a > col_a)
 		max = lin_a;
@@ -114,20 +115,18 @@ void matrix_multiplication_abft() {
 	if (col_b > lin_a)
 		max = col_b;
 	printf("max %ld\n", max);
+
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
 	float_t *h_dev_mat = (float*) calloc(max, sizeof(float));
 	int i = 0;
 
-	for (i = 0; i < max; i++){
-		h_dev_mat[i] = 1;
-	}
+	fill_array(h_dev_mat, 1.0, max);
 
 	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max, cudaMemcpyHostToDevice);
+	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
-
-
 
 	printf("Vetor saida colunas\n");
 	print_array(h_check_col, col_b);
@@ -137,7 +136,7 @@ void matrix_multiplication_abft() {
 
 	printf("\n");
 
-	cudaFree(dev_mat);
+//	cudaFree(dev_mat);
 //	cudaFree(check_col);
 //	cudaFree(check_row);
 

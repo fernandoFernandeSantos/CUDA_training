@@ -518,21 +518,6 @@ __global__ void place_row(float_t *checksum, float_t *mat, long_t rows,
 void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
 		long_t cols_b) {
-	//allocate only a big array to multiply
-	long_t max = cols_a;
-	if (rows_a > cols_a)
-		max = rows_a;
-
-	if (cols_b > rows_a)
-		max = cols_b;
-
-	cudaMalloc(&dev_mat, max * sizeof(float_t));
-	cudaMemset(dev_mat, 1, max * sizeof(float_t));
-
-
-	cudaMalloc(&check_col, cols_b * sizeof(float_t));
-	cudaMalloc(&check_row, cols_a * sizeof(float_t));
-
 	//dgemm for each one
 	dgemm_host(cols_a, rows_a, cols_a, 1, mat_a, dev_mat, check_row);
 	dgemm_host(cols_b, cols_a, 1,cols_b , mat_b, dev_mat, check_col);
