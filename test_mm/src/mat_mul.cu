@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-
+#include "cuda.h"
 #include <math.h>
 #include "abft.h"
 #define PRINT_TYPE double
@@ -106,8 +106,14 @@ void matrix_multiplication_abft() {
 
 	float_t *dev_mat;
 //	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
+	long_t max = col_a;
+	if (lin_a > col_a)
+		max = lin_a;
+
+	if (col_b > lin_a)
+		max = col_b;
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
-	cudamemset(dev_mat, 1, max * sizeof(float_t));
+	cudaMemset(dev_mat, 1, max * sizeof(float_t));
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_check_row, dev_mat, col_a * sizeof(float_t), cudaMemcpyDeviceToHost);
