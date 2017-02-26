@@ -146,14 +146,14 @@ void matrix_multiplication_abft() {
 
 
 
-//	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
-//			device_array_c);
+	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
+			device_array_c);
 
 
 	ErrorReturn temp = check_checksums_from_host(device_array_c, lin_a, col_b);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
 		time_from_host = mysecond();
-//	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
+	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
 
 
 	printf("Final check time calling from host %lf\n",
