@@ -6,7 +6,6 @@
 #include "abft.h"
 #define PRINT_TYPE double
 
-
 inline double mysecond() {
 	struct timeval tp;
 	struct timezone tzp;
@@ -47,14 +46,23 @@ void compare(float *t, float *s, long siz) {
 	}
 }
 
-void inline print_array(float_t *arr, long_t n){ int i; for (i = 0; i < n; i++) printf("%lf ", arr[i]); printf("\n");}
-void inline fill_array(float_t *arr, float_t val, long_t n){ int i; for (i = 0; i < n; i++) arr[i] = val;}
+void inline print_array(float_t *arr, long_t n) {
+	int i;
+	for (i = 0; i < n; i++)
+		printf("%lf ", arr[i]);
+	printf("\n");
+}
+void inline fill_array(float_t *arr, float_t val, long_t n) {
+	int i;
+	for (i = 0; i < n; i++)
+		arr[i] = val;
+}
 
 void matrix_multiplication_abft() {
-	long lin_a = 20;//05;//96;
-	long col_a = 12;//55;//48;
-	long lin_b = col_a;//48;
-	long col_b = 14;//02;//92;
+	long lin_a = 20; //05;//96;
+	long col_a = 12; //55;//48;
+	long lin_b = col_a; //48;
+	long col_b = 14; //02;//92;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
@@ -78,13 +86,10 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
 
-
 //	calc_checksums_from_host(device_array_a, device_array_b, lin_a, col_a, lin_b, col_b);
-
 
 	float_t *check_col, *check_row;
 	float_t *h_check_col, *h_check_row;
-
 
 	cudaMalloc(&check_col, col_b * sizeof(float_t));
 	cudaMalloc(&check_row, lin_a * sizeof(float_t));
@@ -106,13 +111,18 @@ void matrix_multiplication_abft() {
 
 	fill_array(h_dev_mat, 1.0, max);
 
-	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max, cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max,
+			cudaMemcpyHostToDevice);
 
+	int i = 0;
 	double time_from_host = mysecond();
-	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
-	printf("Calc checksums time calling from host %lf\n",
-			mysecond() - time_from_host);
-
+	for (i = 0; i < 10; i++) {
+		time_from_host = mysecond();
+		calc_checksums(device_array_a, device_array_b, dev_mat, check_row,
+				check_col, lin_a, col_a, col_b);
+		printf("Calc checksums time calling from host %lf\n",
+				mysecond() - time_from_host);
+	}
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
 
@@ -120,8 +130,10 @@ void matrix_multiplication_abft() {
 
 	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
 
-	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t),
+			cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t),
+			cudaMemcpyDeviceToHost);
 
 //	printf("Vetor saida colunas\n");
 //	print_array(h_check_col, col_b);
@@ -132,7 +144,6 @@ void matrix_multiplication_abft() {
 	//move the data to a new matrix
 //	float_t *dev_mat_a_aux, *dev_mat_b_aux, *dev_mat_c_aux;
 
-
 //	long vec_siz_a_aux = ((lin_a + 1) * (col_a));
 //	long vec_siz_b_aux = ((lin_b) * (col_b + 1));
 //	long vec_siz_c_aux = ((lin_a + 1) * (col_b + 1));
@@ -140,11 +151,8 @@ void matrix_multiplication_abft() {
 //	cudaMalloc(&dev_ma_b_aux, vec_siz_b_aux * sizeof(float_t));
 //	cudaMalloc(&dev_ma_c_aux, vec_siz_c_aux * sizeof(float_t));
 
-
-
 	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
 			device_array_c);
-
 
 //	ErrorReturn temp = check_checksums_from_host(device_array_c, lin_a, col_b);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
@@ -152,10 +160,8 @@ void matrix_multiplication_abft() {
 
 	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
 
-
 	printf("Final check time calling from host %lf\n",
 			mysecond() - time_from_host);
-
 
 //	printf("Detected row errors: %d\nDetected collum errors %d\n",
 //			temp.row_detected_errors, temp.col_detected_errors);
