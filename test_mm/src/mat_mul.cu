@@ -78,13 +78,8 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
 
-	double time_from_host = mysecond();
+
 //	calc_checksums_from_host(device_array_a, device_array_b, lin_a, col_a, lin_b, col_b);
-	printf("Calc checksums time calling from host %lf\n",
-			mysecond() - time_from_host);
-
-
-
 
 
 	float_t *check_col, *check_row;
@@ -108,14 +103,15 @@ void matrix_multiplication_abft() {
 
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
 	float_t *h_dev_mat = (float*) calloc(max, sizeof(float));
-	int i = 0;
 
 	fill_array(h_dev_mat, 1.0, max);
 
 	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max, cudaMemcpyHostToDevice);
 
-
+	double time_from_host = mysecond();
 	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
+	printf("Calc checksums time calling from host %lf\n",
+			mysecond() - time_from_host);
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
@@ -127,14 +123,14 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
 
-	printf("Vetor saida colunas\n");
-	print_array(h_check_col, col_b);
-
-	printf("Vetor saida linhas\n");
-	print_array(h_check_row, lin_a);
+//	printf("Vetor saida colunas\n");
+//	print_array(h_check_col, col_b);
+//
+//	printf("Vetor saida linhas\n");
+//	print_array(h_check_row, lin_a);
 
 	//move the data to a new matrix
-	float_t *dev_mat_a_aux, *dev_mat_b_aux, *dev_mat_c_aux;
+//	float_t *dev_mat_a_aux, *dev_mat_b_aux, *dev_mat_c_aux;
 
 
 //	long vec_siz_a_aux = ((lin_a + 1) * (col_a));
@@ -150,9 +146,10 @@ void matrix_multiplication_abft() {
 			device_array_c);
 
 
-	ErrorReturn temp = check_checksums_from_host(device_array_c, lin_a, col_b);
+//	ErrorReturn temp = check_checksums_from_host(device_array_c, lin_a, col_b);
 	cudaMemcpy(host_array_c, device_array_c, siz_c, cudaMemcpyDeviceToHost);
-		time_from_host = mysecond();
+	time_from_host = mysecond();
+
 	print_mat_row_major(host_array_c, lin_a, col_b, "GPU result mat");
 
 
@@ -160,8 +157,8 @@ void matrix_multiplication_abft() {
 			mysecond() - time_from_host);
 
 
-	printf("Detected row errors: %d\nDetected collum errors %d\n",
-			temp.row_detected_errors, temp.col_detected_errors);
+//	printf("Detected row errors: %d\nDetected collum errors %d\n",
+//			temp.row_detected_errors, temp.col_detected_errors);
 	printf("\n");
 
 	gpuErrchk(cudaDeviceSynchronize());
@@ -178,7 +175,7 @@ void matrix_multiplication_abft() {
 //	cudaFree(dev_mat);
 //	cudaFree(check_col);
 //	cudaFree(check_row);
-	free_error_return(&temp);
+//	free_error_return(&temp);
 }
 
 int main(void) {
