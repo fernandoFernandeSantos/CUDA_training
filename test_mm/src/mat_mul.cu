@@ -51,10 +51,10 @@ void inline print_array(float_t *arr, long_t n){ int i; for (i = 0; i < n; i++) 
 void inline fill_array(float_t *arr, float_t val, long_t n){ int i; for (i = 0; i < n; i++) arr[i] = val;}
 
 void matrix_multiplication_abft() {
-	long lin_a = 2005;//96;
-	long col_a = 1255;//48;
+	long lin_a = 20;//05;//96;
+	long col_a = 12;//55;//48;
 	long lin_b = col_a;//48;
-	long col_b = 1402;//92;
+	long col_b = 14;//02;//92;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
@@ -85,9 +85,7 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
-	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
 
-	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
 
 
 	float_t *check_col, *check_row;
@@ -117,6 +115,9 @@ void matrix_multiplication_abft() {
 
 	cudaMemcpy(dev_mat, h_dev_mat, sizeof(float_t) * max, cudaMemcpyHostToDevice);
 	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
+	print_mat_row_major(host_array_a, lin_a, col_a, "matrix A");
+
+	print_mat_row_major(host_array_b, lin_b, col_b, "matrix B");
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
@@ -127,14 +128,19 @@ void matrix_multiplication_abft() {
 	printf("Vetor saida linhas\n");
 	print_array(h_check_row, lin_a);
 
-	printf("\n");
-
-	cudaFree(dev_mat);
-	cudaFree(check_col);
-	cudaFree(check_row);
+	//move the data to a new matrix
+	float_t *dev_mat_a_aux, *dev_mat_b_aux, *dev_mat_c_aux;
 
 
-	//
+//	long vec_siz_a_aux = ((lin_a + 1) * (col_a));
+//	long vec_siz_b_aux = ((lin_b) * (col_b + 1));
+//	long vec_siz_c_aux = ((lin_a + 1) * (col_b + 1));
+//	cudaMalloc(&dev_ma_a_aux, vec_siz_a_aux * sizeof(float_t));
+//	cudaMalloc(&dev_ma_b_aux, vec_siz_b_aux * sizeof(float_t));
+//	cudaMalloc(&dev_ma_c_aux, vec_siz_c_aux * sizeof(float_t));
+
+
+
 //	dgemm_host(col_a, lin_a, col_b, lin_b, device_array_a, device_array_b,
 //			device_array_c);
 
@@ -161,6 +167,12 @@ void matrix_multiplication_abft() {
 	cudaFree(device_array_a);
 	cudaFree(device_array_b);
 	cudaFree(device_array_c);
+
+	free(h_check_col);
+	free(h_check_row);
+	cudaFree(dev_mat);
+	cudaFree(check_col);
+	cudaFree(check_row);
 	free_error_return(&temp);
 }
 
