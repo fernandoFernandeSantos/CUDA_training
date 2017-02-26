@@ -127,17 +127,19 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t), cudaMemcpyDeviceToHost);
 
+
+
 	printf("Vetor saida colunas\n");
 	print_array(h_check_col, col_b);
 
 	printf("Vetor saida linhas\n");
-	print_array(h_check_row, max);
+	print_array(h_check_row, lin_a);
 
 	printf("\n");
 
 	cudaFree(dev_mat);
-	cudaFree(check_col);
-	cudaFree(check_row);
+//	cudaFree(check_col);
+//	cudaFree(check_row);
 
 
 	//
