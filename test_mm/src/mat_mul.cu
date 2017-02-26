@@ -105,8 +105,9 @@ void matrix_multiplication_abft() {
 	h_check_row = (float*) calloc(col_a, sizeof(float));
 
 	float_t *dev_mat;
-	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
-
+//	calc_checksums(device_array_a, device_array_b, dev_mat, check_row, check_col, lin_a, col_a, col_b);
+	cudaMalloc(&dev_mat, max * sizeof(float_t));
+	cudamemset(dev_mat, 1, max * sizeof(float_t));
 
 	cudaMemcpy(h_check_col, check_col, col_b * sizeof(float_t), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_check_row, dev_mat, col_a * sizeof(float_t), cudaMemcpyDeviceToHost);
@@ -120,7 +121,7 @@ void matrix_multiplication_abft() {
 	printf("\n");
 	printf("Vetor saida linhas\n");
 	for(i =0; i < col_a; i++){
-		printf("%lf ", dev_mat[i]);
+		printf("%lf ", h_check_row[i]);
 	}
 
 	printf("\n");

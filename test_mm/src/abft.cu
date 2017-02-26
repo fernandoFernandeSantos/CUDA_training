@@ -514,13 +514,6 @@ __global__ void place_row(float_t *checksum, float_t *mat, long_t rows,
 
 }
 
-__global__ void memset_cuda(float_t *arr, float_t val, long_t n){
-	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < n){
-		arr[i] = val;
-	}
-}
-
 
 void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
@@ -534,16 +527,13 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 		max = cols_b;
 
 	cudaMalloc(&dev_mat, max * sizeof(float_t));
-	long_t blocks = ceil(float(max) / float(BLOCK_SIZE));
-	long_t threads = ceil(float(max) / float(blocks));
-
-	memset_cuda<<<blocks, threads>>>(dev_mat, 1.0, max);
+	cudamemset(dev_mat, 1, max * sizeof(float_t));
 
 	cudaMalloc(&check_col, cols_b * sizeof(float_t));
 	cudaMalloc(&check_row, cols_a * sizeof(float_t));
 
 	//dgemm for each one
-//	dgemm_host(cols_a, rows_a, cols_a, 1, mat_a, dev_mat, check_row);
+	dgemm_host(cols_a, rows_a, cols_a, 1, mat_a, dev_mat, check_row);
 //	dgemm_host(cols_b, cols_a, 1,cols_b , mat_b, dev_mat, check_col);
 
 	//place_col<<<>>>(check_col, )
