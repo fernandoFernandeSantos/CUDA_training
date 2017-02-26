@@ -120,7 +120,7 @@ void matrix_multiplication_abft() {
 	printf("\n");
 	printf("Vetor saida linhas\n");
 	for(i =0; i < col_a; i++){
-		printf("%lf ", h_check_row[i]);
+		printf("%lf ", dev_mat[i]);
 	}
 
 	printf("\n");
