@@ -520,8 +520,8 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 		long_t cols_b) {
 	//dgemm for each one
 	dgemm_host(cols_a, rows_a, 1, cols_a, mat_a, dev_mat, check_row);
-
-}
+	dgemm_host(cols_a, 1, cols_b,cols_a, dev_mat, mat_b, check_col)
+;}
 
 /**
  Matrix multiplication: C = A * B.
