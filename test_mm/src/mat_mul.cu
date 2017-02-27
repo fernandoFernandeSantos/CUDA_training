@@ -135,11 +135,11 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(h_check_row, check_row, lin_a * sizeof(float_t),
 			cudaMemcpyDeviceToHost);
 
-//	printf("Vetor saida colunas\n");
-//	print_array(h_check_col, col_b);
-//
-//	printf("Vetor saida linhas\n");
-//	print_array(h_check_row, lin_a);
+	printf("Vetor saida colunas\n");
+	print_array(h_check_col, col_b);
+
+	printf("Vetor saida linhas\n");
+	print_array(h_check_row, lin_a);
 
 	//move the data to a new matrix
 //	float_t *dev_mat_a_aux, *dev_mat_b_aux, *dev_mat_c_aux;

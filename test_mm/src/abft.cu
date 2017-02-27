@@ -521,8 +521,8 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
 	//dgemm for each one
 	//check_row has 1 of col size and cols_a of line size
 	//check_col has cols_a of col size and 1 of line size
-	dgemm_host(cols_a, rows_a, 1, cols_a, mat_a, dev_mat, check_row);
-	dgemm_host(cols_a, 1, cols_b,cols_a, dev_mat, mat_b, check_col);
+	dgemv_host(cols_a, rows_a, 1, cols_a, mat_a, dev_mat, check_row);
+	dgemv_host(cols_a, 1, cols_b,cols_a, dev_mat, mat_b, check_col);
 
 	long_t blocks_a = ceil(float(cols_a * rows_a) / float(BLOCK_SIZE * BLOCK_SIZE));
 	dim3 threads_per_block_a = dim3(cols_a, rows_a);
@@ -573,7 +573,7 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
  Piscataway, NJ: IEEE Press, 2008, pp. Art. 31:1-11.
  */
 
-cublasStatus_t inline dgemm_host(int width_a, int height_a, int width_b,
+cublasStatus_t dgemm_host(int width_a, int height_a, int width_b,
 		int height_b, float *a, float *b, float *c) {
 	cublasHandle_t handle;
 	cublasCreate(&handle);
@@ -604,7 +604,7 @@ cublasStatus_t inline dgemm_host(int width_a, int height_a, int width_b,
 	return ret;
 }
 
-cublasStatus_t inline dgemv_host(int width_a, int height_a, int width_b,
+cublasStatus_t dgemv_host(int width_a, int height_a, int width_b,
 		int height_b, float *a, float *b, float *c) {
 	cublasHandle_t handle;
 	cublasCreate(&handle);
