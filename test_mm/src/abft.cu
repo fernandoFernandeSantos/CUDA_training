@@ -254,19 +254,22 @@ __device__ float excl_col_sum_seq(float *mat, long_t rows, long_t cols,
 //rows_b MUST BE THE SAME OF cols_a
 __global__ void calc_collum_checksum(float *mat, long_t rows, long_t cols) {
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
-	long_t mat_index = get_index((rows - 1), j, cols);
+	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 
-	if (rows == 1 || mat_index > (rows * cols))
-		mat[0] = 0;
 
-	long_t k;
-	double acc = 0;
-	for (k = 0; k < rows - 1; k++) {
-		long_t index = get_index(k, j, cols);
+//	long_t k;
+	float acc = 0;
+//	for (k = 0; k < rows - 1; k++) {
+	if ((i * j) < (rows * cols)){
+		long_t index = get_index(i, j, cols);
 		acc += (mat[index] / DIV_VALUE);
 	}
+//	}
 
-	mat[mat_index] = acc;
+	if (i == rows - 1){
+		long_t mat_index = get_index((rows - 1), j, cols);
+		mat[mat_index] = acc;
+	}
 }
 
 /**
@@ -280,18 +283,22 @@ __global__ void calc_collum_checksum(float *mat, long_t rows, long_t cols) {
  }
  */
 __global__ void calc_row_checksum(float *mat, long_t rows, long_t cols) {
-	long_t i = blockIdx.x * blockDim.x + threadIdx.x;
-	long_t b_index = get_index(i, cols - 1, cols);
-	if (rows == 1 || b_index > (rows * cols))
-		return;
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 
-	long_t k;
-	double acc = 0;
-	for (k = 0; k < cols - 1; k++) {
-		long_t index = get_index(i, k, cols);
+
+//	long_t k;
+	float acc = 0;
+//	for (k = 0; k < cols - 1; k++) {
+	if ((i * j) < (cols * rows)){
+		long_t index = get_index(i, j, cols);
 		acc += (mat[index] / DIV_VALUE);
 	}
-	mat[b_index] = acc;
+//	}
+	if (j == cols - 1){
+		long_t b_index = get_index(i, cols - 1, cols);
+		mat[b_index] = acc;
+	}
 }
 
 __global__ void fault_injection(float *mat, int pos) {
@@ -467,26 +474,24 @@ ErrorReturn check_checksums_from_host(float *c, long_t rows_c, long_t cols_c) {
 
 void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 		long_t rows_b, long_t cols_b) {
-	//1d grid for abft operations
-//	long_t *temp;
-//	long_t temp_host[cols_a];
-//	cudaMalloc(&temp, cols_a * sizeof(long_t));
+
 	long_t blocks = ceil(float(cols_a) / float(BLOCK_SIZE));
-	long_t threads = ceil(float(cols_a) / float(blocks));
-	calc_collum_checksum<<<blocks, threads>>>(a, rows_a, cols_a);
-//	cudaMemcpy(temp_host, temp, cols_a * sizeof(long_t), cudaMemcpyDeviceToHost);
-	printf("first blocks %ld threads %ld\n", blocks, threads);
+	long_t threads_col = ceil(float(cols_a) / float(blocks));
+	long_t threads_row = ceil(float(rows_a) / float(blocks));
+	dim3 threads_blocks(threads_col,threads_row);
+
+
+	calc_collum_checksum<<<blocks, threads_blocks>>>(a, rows_a, cols_a);
+
+//	printf("first blocks %ld threads %ld\n", blocks, threads);
 	//second
 	blocks = ceil(float(rows_b) / float(BLOCK_SIZE));
-	threads = ceil(float(rows_b) / float(blocks));
-	calc_row_checksum<<<blocks, threads>>>(b, rows_b, cols_b);
-	printf("second blocks %ld threads %ld\n", blocks, threads);
-//	long_t row_detected_errors_host, col_detected_errors_host;
-//
-//	cudaMemcpyFromSymbol(&row_detected_errors_host, err_count.row_detected_errors,
-//			sizeof(int));
-//	cudaMemcpyFromSymbol(&col_detected_errors_host, err_count.col_detected_errors,
-//			sizeof(int));
+	threads_col = ceil(float(cols_b) / float(blocks));
+	threads_row = ceil(float(rows_b) / float(blocks));
+	threads_blocks = dim3(threads_col,threads_row);
+	calc_row_checksum<<<blocks, threads_blocks>>>(b, rows_b, cols_b);
+//	printf("second blocks %ld threads %ld\n", blocks, threads);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
