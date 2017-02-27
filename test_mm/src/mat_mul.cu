@@ -59,10 +59,10 @@ void inline fill_array(float_t *arr, float_t val, long_t n) {
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 200;//5;//96;
-	long col_a = 125;//5;//48;
+	long lin_a = 20;//0;//5;//96;
+	long col_a = 12;//5;//5;//48;
 	long lin_b = col_a; //48;
-	long col_b = 140;//2;//92;
+	long col_b = 14;//0;//2;//92;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
