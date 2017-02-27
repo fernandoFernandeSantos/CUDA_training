@@ -258,9 +258,9 @@ __global__ void calc_collum_checksum(float *mat, long_t rows, long_t cols) {
 
 
 //	long_t k;
-//	float acc = 0;
+//	float acc = 0; (i * j) < (rows * cols) &&
 //	for (k = 0; k < rows - 1; k++) {
-	if ((i * j) < (rows * cols) && (i == rows - 1)){
+	if (j == rows - 1){
 		long_t index = get_index(i, j, cols);
 		long_t mat_index = get_index((rows - 1), j, cols);
 		atomicAdd(mat + mat_index, (mat[index] / DIV_VALUE));
@@ -287,9 +287,9 @@ __global__ void calc_row_checksum(float *mat, long_t rows, long_t cols) {
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 
-//	long_t k;
+//	long_t k; i * j) < (cols * rows) &&
 //	for (k = 0; k < cols - 1; k++) {
-	if ((i * j) < (cols * rows) && (j == cols - 1)){
+	if (i == cols - 1){
 		long_t index = get_index(i, j, cols);
 		long_t b_index = get_index(i, cols - 1, cols);
 		atomicAdd(mat + b_index,(mat[index] / DIV_VALUE));
