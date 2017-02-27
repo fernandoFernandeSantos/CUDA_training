@@ -516,13 +516,13 @@ __global__ void place_row(float_t *checksum, float_t *mat, long_t rows,
 
 
 void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
-		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
+		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a, long_t rows_b,
 		long_t cols_b) {
 	//dgemm for each one
 	//check_row has 1 of col size and cols_a of line size
 	//check_col has cols_a of col size and 1 of line size
-	dgemv_host(cols_a, rows_a, 1, cols_a, mat_a, dev_mat, check_row, CUBLAS_OP_T);
-	dgemv_host(cols_b,cols_a, cols_a, 1, mat_b,dev_mat, check_col, CUBLAS_OP_T);
+	dgemm_host(cols_a, rows_a, 1, cols_a, mat_a, dev_mat, check_row);
+	dgemm_host(cols_a, 1, cols_b,cols_a, dev_mat, mat_b, check_col);
 
 	long_t blocks_a = ceil(float(cols_a * rows_a) / float(BLOCK_SIZE * BLOCK_SIZE));
 	dim3 threads_per_block_a = dim3(cols_a, rows_a);

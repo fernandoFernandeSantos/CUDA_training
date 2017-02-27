@@ -119,7 +119,7 @@ void matrix_multiplication_abft() {
 	for (i = 0; i < 10; i++) {
 		time_from_host = mysecond();
 		calc_checksums(device_array_a, device_array_b, dev_mat, check_row,
-				check_col, lin_a, col_a, col_b);
+				check_col, lin_a, col_a, lin_b,  col_b);
 		printf("Calc checksums time calling from host %lf\n",
 				mysecond() - time_from_host);
 	}

@@ -81,7 +81,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 
 void free_error_return(ErrorReturn*);
 void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
-		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
+		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a, long_t rows_b,
 		long_t cols_b);
 
 
