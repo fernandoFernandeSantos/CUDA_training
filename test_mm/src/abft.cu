@@ -252,11 +252,11 @@ __device__ float excl_col_sum_seq(float *mat, long_t rows, long_t cols,
 //        a[lin_a * col_a + j] = acc;
 //	}
 //rows_b MUST BE THE SAME OF cols_a
-__global__ void calc_collum_checksum(float *mat, long_t rows, long_t cols) {
+__global__ void calc_collum_checksum_temp(float *mat, long_t rows, long_t cols) {
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 
-	printf("blockDim.x %d blockIdx.x  %d threadIdx.x %d i value %d j value %d\n", blockIdx.x, blockDim.x, threadIdx.x, i, j);
+	//printf("blockDim.x %d blockIdx.x  %d threadIdx.x %d i value %d j value %d\n", blockIdx.x, blockDim.x, threadIdx.x, i, j);
 
 	if (i == rows - 1){
 
@@ -477,7 +477,7 @@ void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 	threads.y = ceil(float(rows_a) / float(blocks.y));
 
 	printf("%d %d %d %d\n", blocks.x, blocks.y, threads.x, threads.y);
-	calc_collum_checksum<<<blocks, threads>>>(a, rows_a, cols_a);
+	calc_collum_checksum_temp<<<blocks, threads>>>(a, rows_a, cols_a);
 
 
 	//second
