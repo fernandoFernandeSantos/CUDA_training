@@ -89,6 +89,6 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
 		float *a, float *b, float *c);
 
 cublasStatus_t dgemv_host(int width_a, int height_a, int width_b,
-		int height_b, float *a, float *b, float *c);
+		int height_b, float *a, float *b, float *c, cublasOperation_t trans);
 
 #endif /* ABFT_H_ */
