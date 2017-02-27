@@ -475,23 +475,24 @@ ErrorReturn check_checksums_from_host(float *c, long_t rows_c, long_t cols_c) {
 
 void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 		long_t rows_b, long_t cols_b) {
+	dim3 blocks, threads;
 
-	long_t blocks = ceil(float(cols_a) / float(BLOCK_SIZE));
-	long_t threads_col = ceil(float(cols_a) / float(blocks));
-	long_t threads_row = ceil(float(rows_a) / float(blocks));
-	dim3 threads_blocks(threads_col,threads_row);
+	blocks.x = ceil(float(cols_a) / float(BLOCK_SIZE));
+	blocks.y = ceil(float(rows_a) / float(BLOCK_SIZE));
+	threads.x = ceil(float(cols_a) / float(blocks.x));
+	threads.y = ceil(float(rows_a) / float(blocks.y));
 
-
-	calc_collum_checksum<<<blocks, dim3(threads_col, threads_row) >>>(a, rows_a, cols_a);
+	calc_collum_checksum<<<blocks, threads >>>(a, rows_a, cols_a);
 
 
 	//second
-	blocks = ceil(float(rows_b) / float(BLOCK_SIZE));
-	threads_col = ceil(float(cols_b) / float(blocks));
-	threads_row = ceil(float(rows_b) / float(blocks));
-	threads_blocks = dim3(threads_col,threads_row);
-	printf("first blocks %ld threads %ld %ld\n", blocks, threads_blocks.x, threads_blocks.y);
-	calc_row_checksum<<<blocks, threads_blocks>>>(b, rows_b, cols_b);
+	blocks.x = ceil(float(cols_b) / float(BLOCK_SIZE));
+	blocks.y = ceil(float(rows_b) / float(BLOCK_SIZE));
+	threads.x = ceil(float(cols_b) / float(blocks.x));
+	threads.y = ceil(float(rows_b) / float(blocks.y));
+
+
+	calc_row_checksum<<<blocks, threads>>>(b, rows_b, cols_b);
 //	printf("second blocks %ld threads %ld\n", blocks, threads);
 
 }
