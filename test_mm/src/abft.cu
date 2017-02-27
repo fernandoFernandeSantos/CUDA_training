@@ -256,7 +256,7 @@ __global__ void calc_collum_checksum(float *mat, long_t rows, long_t cols) {
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 
-	printf("threadIdx.x %d blockDim.x  %d blockIdx.x %d i value %d j value %d\n", blockIdx.x, blockDim.x, threadIdx.x, i, j);
+	printf("blockDim.x %d blockIdx.x  %d threadIdx.x %d i value %d j value %d\n", blockIdx.x, blockDim.x, threadIdx.x, i, j);
 
 	if (i == rows - 1){
 
