@@ -483,7 +483,7 @@ void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 
 	calc_collum_checksum<<<blocks, threads_blocks>>>(a, rows_a, cols_a);
 
-//	printf("first blocks %ld threads %ld\n", blocks, threads);
+	printf("first blocks %ld threads %ld %ld\n", blocks, threads_col, threads_row);
 	//second
 	blocks = ceil(float(rows_b) / float(BLOCK_SIZE));
 	threads_col = ceil(float(cols_b) / float(blocks));
