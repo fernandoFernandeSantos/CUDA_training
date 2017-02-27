@@ -86,7 +86,9 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
 
-//	calc_checksums_from_host(device_array_a, device_array_b, lin_a, col_a, lin_b, col_b);
+
+
+	calc_checksums_from_host(device_array_a, device_array_b, lin_a, col_a, lin_b, col_b);
 
 	float_t *check_col, *check_row;
 	float_t *h_check_col, *h_check_row;
@@ -116,13 +118,13 @@ void matrix_multiplication_abft() {
 
 	int i = 0;
 	double time_from_host = mysecond();
-	for (i = 0; i < 10; i++) {
-		time_from_host = mysecond();
-		calc_checksums(device_array_a, device_array_b, dev_mat, check_row,
-				check_col, lin_a, col_a, lin_b,  col_b);
-		printf("Calc checksums time calling from host %lf\n",
-				mysecond() - time_from_host);
-	}
+//	for (i = 0; i < 10; i++) {
+//		time_from_host = mysecond();
+//		calc_checksums(device_array_a, device_array_b, dev_mat, check_row,
+//				check_col, lin_a, col_a, lin_b,  col_b);
+//		printf("Calc checksums time calling from host %lf\n",
+//				mysecond() - time_from_host);
+//	}
 	cudaMemcpy(host_array_a, device_array_a, siz_a, cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_array_b, device_array_b, siz_b, cudaMemcpyDeviceToHost);
 
