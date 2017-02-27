@@ -604,3 +604,24 @@ cublasStatus_t inline dgemm_host(int width_a, int height_a, int width_b,
 	return ret;
 }
 
+cublasStatus_t inline dgemv_host(int width_a, int height_a, int width_b,
+		int height_b, float *a, float *b, float *c) {
+	cublasHandle_t handle;
+	cublasCreate(&handle);
+	const float alpha = 1;
+	const float beta = 0;
+	//note cublas is column primary!
+	//need to transpose the order
+	int lda = width_a;
+
+	cublasStatus_t ret = cublasSgemv(handle, CUBLAS_OP_T, height_a, width_a, &alpha, a, lda, b, 1, &beta, c, 1);
+
+	if (CUBLAS_STATUS_SUCCESS != ret) {
+		printf("pau no blas\n");
+		exit(-1);
+	}
+
+	cublasDestroy(handle);
+	return ret;
+}
+
