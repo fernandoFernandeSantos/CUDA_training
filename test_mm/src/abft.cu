@@ -261,6 +261,7 @@ __global__ void calc_collum_checksum(float *mat, long_t rows, long_t cols) {
 //	float acc = 0; (i * j) < (rows * cols) &&
 //	for (k = 0; k < rows - 1; k++) {
 	if (i == rows - 1){
+		printf("i value %d j value %d\n", i, j);
 		long_t index = get_index(i, j, cols);
 		long_t mat_index = get_index((rows - 1), j, cols);
 		atomicAdd(mat + mat_index, (mat[index] / DIV_VALUE));
