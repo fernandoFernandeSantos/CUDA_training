@@ -614,7 +614,7 @@ cublasStatus_t dgemv_host(int width_a, int height_a, int width_b,
 	//need to transpose the order
 	int lda = width_a;
 
-	cublasStatus_t ret = cublasSgemv(handle, CUBLAS_OP_T, height_a, width_a, &alpha, a, lda, b, 1, &beta, c, 1);
+	cublasStatus_t ret = cublasSgemv(handle, CUBLAS_OP_N, height_a, width_a, &alpha, a, lda, b, 1, &beta, c, 1);
 	printf("passou\n");
 	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas\n");
