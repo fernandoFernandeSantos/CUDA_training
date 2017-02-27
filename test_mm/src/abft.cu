@@ -482,7 +482,7 @@ void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 	dim3 threads_blocks(threads_col,threads_row);
 
 
-	calc_collum_checksum<<<blocks, threads_blocks>>>(a, rows_a, cols_a);
+	calc_collum_checksum<<<blocks, dim3(threads_col, threads_row) >>>(a, rows_a, cols_a);
 
 
 	//second
