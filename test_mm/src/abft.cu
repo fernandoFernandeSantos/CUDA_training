@@ -263,9 +263,9 @@ __global__ void calc_collum_checksum_temp(float *mat, long_t rows,
 //			threadIdx.y, i, j, row, col);
 
 	if (i == rows - 1) {
+		printf("row %d col %d\n", i, j);
 		long_t index = get_index(i, j, cols);
 		long_t mat_index = get_index((rows - 1), j, cols);
-		__syncthreads();
 		atomicAdd(mat + mat_index, (mat[index] / DIV_VALUE));
 	}
 
