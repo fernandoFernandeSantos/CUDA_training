@@ -257,7 +257,7 @@ __global__ void calc_collum_checksum_temp(float *mat, long_t rows,
 	long_t i = (blockIdx.y * blockDim.y) + threadIdx.y;
 	long_t j = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-	printf ("threadIdx.x %d\n", threadIdx.x);
+	printf ("threadIdx.x %d j %d\n", threadIdx.x, j);
 	if (i == rows - 1) {
 		printf("row %d col %d\n", i, j);
 		long_t index = get_index(i, j, cols);
