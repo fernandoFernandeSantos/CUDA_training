@@ -475,14 +475,9 @@ ErrorReturn check_checksums_from_host(float *c, long_t rows_c, long_t cols_c) {
 
 void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 		long_t rows_b, long_t cols_b) {
-	dim3 blocks, threads;
 
-	blocks.x = ceil(float(cols_a) / float(BLOCK_SIZE));
-	blocks.y = ceil(float(rows_a) / float(BLOCK_SIZE));
-	threads.x = ceil(float(cols_a) / float(blocks.x));
-	threads.y = ceil(float(rows_a) / float(blocks.y));
-	blocks.z = 1;
-	threads.z = 1;
+	dim3  blocks (ceil(float(cols_a) / float(BLOCK_SIZE)), ceil(float(rows_a) / float(BLOCK_SIZE)), 1);
+	dim3  threads(ceil(float(cols_a) / float(blocks.x)), ceil(float(rows_a) / float(blocks.y)), 1);
 
 	printf("%d %d %d %d\n", blocks.x, blocks.y, threads.x, threads.y);
 	calc_collum_checksum_temp<<<blocks, threads>>>(a, rows_a, cols_a);
