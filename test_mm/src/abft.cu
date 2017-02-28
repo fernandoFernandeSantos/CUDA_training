@@ -257,18 +257,15 @@ __global__ void calc_collum_checksum_temp(float *mat, long_t rows,
 	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
 	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
 
-//	int row = blockIdx.y * blockDim.y + threadIdx.y;
-//	int col = blockIdx.x * blockDim.x + threadIdx.x;
-//
 //	printf("blockDim.x %d blockIdx.x  %d threadIdx.x %d\n"
 //			"blockDim.y %d blockIdx.y  %d threadIdx.y %d\ni = %d j = %d %d %d\n",
 //			blockIdx.x, blockDim.x, threadIdx.x, blockIdx.y, blockDim.y,
 //			threadIdx.y, i, j, row, col);
 
 	if (i == rows - 1) {
-
 		long_t index = get_index(i, j, cols);
 		long_t mat_index = get_index((rows - 1), j, cols);
+		__syncthreads();
 		atomicAdd(mat + mat_index, (mat[index] / DIV_VALUE));
 	}
 
@@ -293,6 +290,7 @@ __global__ void calc_row_checksum(float *mat, long_t rows, long_t cols) {
 	if (j == cols - 1) {
 		long_t index = get_index(i, j, cols);
 		long_t b_index = get_index(i, cols - 1, cols);
+		__syncthreads();
 		atomicAdd(mat + b_index, (mat[index] / DIV_VALUE));
 	}
 //	}
