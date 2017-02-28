@@ -254,8 +254,8 @@ __device__ float excl_col_sum_seq(float *mat, long_t rows, long_t cols,
 //rows_b MUST BE THE SAME OF cols_a
 __global__ void calc_collum_checksum_temp(float *mat, long_t rows,
 		long_t cols) {
-	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
-	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+	long_t i = (blockIdx.y * blockDim.y) + threadIdx.y;
+	long_t j = (blockIdx.x * blockDim.x) + threadIdx.x;
 
 //	printf("blockDim.x %d blockIdx.x  %d threadIdx.x %d\n"
 //			"blockDim.y %d blockIdx.y  %d threadIdx.y %d\ni = %d j = %d %d %d\n",
@@ -282,8 +282,8 @@ __global__ void calc_collum_checksum_temp(float *mat, long_t rows,
  }
  */
 __global__ void calc_row_checksum(float *mat, long_t rows, long_t cols) {
-	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
-	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
+	long_t j = (blockIdx.x * blockDim.x) + threadIdx.x;
+	long_t i = (blockIdx.y * blockDim.y) + threadIdx.y;
 
 //	long_t k; i * j) < (cols * rows) &&
 //	for (k = 0; k < cols - 1; k++) {
