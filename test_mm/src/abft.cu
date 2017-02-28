@@ -252,21 +252,27 @@ __device__ float excl_col_sum_seq(float *mat, long_t rows, long_t cols,
 //        a[lin_a * col_a + j] = acc;
 //	}
 //rows_b MUST BE THE SAME OF cols_a
-__global__ void calc_collum_checksum_temp(float *mat, long_t rows, long_t cols) {
-	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void calc_collum_checksum_temp(float *mat, long_t rows,
+		long_t cols) {
+
+
 	long_t i = blockIdx.y * blockDim.y + threadIdx.y;
+	long_t j = blockIdx.x * blockDim.x + threadIdx.x;
+
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
 
 	printf("blockDim.x %d blockIdx.x  %d threadIdx.x %d\n"
-		   "blockDim.y %d blockIdx.y  %d threadIdx.y %d\ni = %d j = %d\n", blockIdx.x, blockDim.x, threadIdx.x,
-		   blockIdx.y, blockDim.y, threadIdx.y, i, j);
+			"blockDim.y %d blockIdx.y  %d threadIdx.y %d\ni = %d j = %d %d %d\n",
+			blockIdx.x, blockDim.x, threadIdx.x, blockIdx.y, blockDim.y,
+			threadIdx.y, i, j, row, col);
 
-	if (i == rows - 1){
+	if (i == rows - 1) {
 
 		long_t index = get_index(i, j, cols);
 		long_t mat_index = get_index((rows - 1), j, cols);
 		atomicAdd(mat + mat_index, (mat[index] / DIV_VALUE));
 	}
-
 
 }
 
@@ -286,10 +292,10 @@ __global__ void calc_row_checksum(float *mat, long_t rows, long_t cols) {
 
 //	long_t k; i * j) < (cols * rows) &&
 //	for (k = 0; k < cols - 1; k++) {
-	if (j == cols - 1){
+	if (j == cols - 1) {
 		long_t index = get_index(i, j, cols);
 		long_t b_index = get_index(i, cols - 1, cols);
-		atomicAdd(mat + b_index,(mat[index] / DIV_VALUE));
+		atomicAdd(mat + b_index, (mat[index] / DIV_VALUE));
 	}
 //	}
 //	if (j == cols - 1){
@@ -481,13 +487,11 @@ void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 	printf("%d %d %d %d\n", blocks.x, blocks.y, threads.x, threads.y);
 	calc_collum_checksum_temp<<<blocks, threads>>>(a, rows_a, cols_a);
 
-
 	//second
 	blocks.x = ceil(float(cols_b) / float(BLOCK_SIZE));
 	blocks.y = ceil(float(rows_b) / float(BLOCK_SIZE));
 	threads.x = ceil(float(cols_b) / float(blocks.x));
 	threads.y = ceil(float(rows_b) / float(blocks.y));
-
 
 	calc_row_checksum<<<blocks, threads>>>(b, rows_b, cols_b);
 //	printf("second blocks %ld threads %ld\n", blocks, threads);
@@ -519,25 +523,28 @@ __global__ void place_row(float_t *checksum, float_t *mat, long_t rows,
 
 }
 
-
 void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
-		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a, long_t rows_b,
-		long_t cols_b) {
+		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
+		long_t rows_b, long_t cols_b) {
 	//dgemm for each one
 	//check_row has 1 of col size and cols_a of line size
 	//check_col has cols_a of col size and 1 of line size
 	dgemm_host(cols_a, rows_a, 1, cols_a, mat_a, dev_mat, check_row);
-	dgemm_host(cols_a, 1, cols_b,cols_a, dev_mat, mat_b, check_col);
+	dgemm_host(cols_a, 1, cols_b, cols_a, dev_mat, mat_b, check_col);
 
-	long_t blocks_a = ceil(float(cols_a * rows_a) / float(BLOCK_SIZE * BLOCK_SIZE));
+	long_t blocks_a = ceil(
+			float(cols_a * rows_a) / float(BLOCK_SIZE * BLOCK_SIZE));
 	dim3 threads_per_block_a = dim3(cols_a, rows_a);
 
-	place_col<<<blocks_a, threads_per_block_a>>>(check_row,mat_a, rows_a, cols_a);
+	place_col<<<blocks_a, threads_per_block_a>>>(check_row, mat_a, rows_a,
+			cols_a);
 
-	long_t blocks_b = ceil(float(cols_a * cols_b) / float(BLOCK_SIZE * BLOCK_SIZE));
+	long_t blocks_b = ceil(
+			float(cols_a * cols_b) / float(BLOCK_SIZE * BLOCK_SIZE));
 	dim3 threads_per_block_b = dim3(cols_b, cols_a);
 
-	place_row<<<blocks_b, threads_per_block_b>>>(check_col, mat_b, cols_a, cols_b);
+	place_row<<<blocks_b, threads_per_block_b>>>(check_col, mat_b, cols_a,
+			cols_b);
 }
 
 /**
@@ -578,8 +585,8 @@ void calc_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
  Piscataway, NJ: IEEE Press, 2008, pp. Art. 31:1-11.
  */
 
-cublasStatus_t dgemm_host(int width_a, int height_a, int width_b,
-		int height_b, float *a, float *b, float *c) {
+cublasStatus_t dgemm_host(int width_a, int height_a, int width_b, int height_b,
+		float *a, float *b, float *c) {
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 	const float alpha = 1;
@@ -609,8 +616,8 @@ cublasStatus_t dgemm_host(int width_a, int height_a, int width_b,
 	return ret;
 }
 
-cublasStatus_t dgemv_host(int width_a, int height_a, int width_b,
-		int height_b, float *a, float *b, float *c, cublasOperation_t trans) {
+cublasStatus_t dgemv_host(int width_a, int height_a, int width_b, int height_b,
+		float *a, float *b, float *c, cublasOperation_t trans) {
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 	const float alpha = 1;
@@ -619,7 +626,8 @@ cublasStatus_t dgemv_host(int width_a, int height_a, int width_b,
 	//need to transpose the order
 	int lda = height_a;
 
-	cublasStatus_t ret = cublasSgemv(handle, trans, height_a, width_a, &alpha, a, lda, b, 1, &beta, c, 1);
+	cublasStatus_t ret = cublasSgemv(handle, trans, height_a, width_a, &alpha,
+			a, lda, b, 1, &beta, c, 1);
 	printf("passou\n");
 	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas\n");
@@ -631,15 +639,16 @@ cublasStatus_t dgemv_host(int width_a, int height_a, int width_b,
 }
 
 void check_checksums(float_t *mat_a, float_t *mat_b, float_t *dev_mat,
-		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a, long_t rows_b,
-		long_t cols_b) {
+		float_t *check_row, float_t *check_col, long_t rows_a, long_t cols_a,
+		long_t rows_b, long_t cols_b) {
 	//dgemm for each one
 	//check_row has 1 of col size and cols_a of line size
 	//check_col has cols_a of col size and 1 of line size
 	dgemm_host(cols_a, rows_a, 1, cols_a, mat_a, dev_mat, check_row);
-	dgemm_host(cols_a, 1, cols_b,cols_a, dev_mat, mat_b, check_col);
+	dgemm_host(cols_a, 1, cols_b, cols_a, dev_mat, mat_b, check_col);
 
-	long_t blocks_a = ceil(float(cols_a * rows_a) / float(BLOCK_SIZE * BLOCK_SIZE));
+	long_t blocks_a = ceil(
+			float(cols_a * rows_a) / float(BLOCK_SIZE * BLOCK_SIZE));
 	dim3 threads_per_block_a = dim3(cols_a, rows_a);
 }
 
