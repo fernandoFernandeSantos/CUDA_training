@@ -481,9 +481,11 @@ void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 	blocks.y = ceil(float(rows_a) / float(BLOCK_SIZE));
 	threads.x = ceil(float(cols_a) / float(blocks.x));
 	threads.y = ceil(float(rows_a) / float(blocks.y));
+	blocks.z = 1;
+	threads.z = 1;
 
 	printf("%d %d %d %d\n", blocks.x, blocks.y, threads.x, threads.y);
-	calc_collum_checksum_temp<<<blocks, threads, 1>>>(a, rows_a, cols_a);
+	calc_collum_checksum_temp<<<blocks, threads>>>(a, rows_a, cols_a);
 
 	//second
 	blocks.x = ceil(float(cols_b) / float(BLOCK_SIZE));
@@ -491,7 +493,7 @@ void calc_checksums_from_host(float *a, float *b, long_t rows_a, long_t cols_a,
 	threads.x = ceil(float(cols_b) / float(blocks.x));
 	threads.y = ceil(float(rows_b) / float(blocks.y));
 
-	calc_row_checksum<<<blocks, threads, 1>>>(b, rows_b, cols_b);
+	calc_row_checksum<<<blocks, threads>>>(b, rows_b, cols_b);
 //	printf("second blocks %ld threads %ld\n", blocks, threads);
 
 }
