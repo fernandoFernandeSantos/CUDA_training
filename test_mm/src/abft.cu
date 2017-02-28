@@ -266,7 +266,7 @@ __global__ void calc_collum_checksum_temp(float *mat, long_t rows,
 		printf("row %d col %d\n", i, j);
 		long_t index = get_index(i, j, cols);
 		long_t mat_index = get_index((rows - 1), j, cols);
-		atomicAdd(mat + mat_index, (mat[index] / DIV_VALUE));
+		//atomicAdd(mat + mat_index, (mat[index] / DIV_VALUE));
 	}
 
 }
@@ -291,7 +291,7 @@ __global__ void calc_row_checksum(float *mat, long_t rows, long_t cols) {
 		long_t index = get_index(i, j, cols);
 		long_t b_index = get_index(i, cols - 1, cols);
 		__syncthreads();
-		atomicAdd(mat + b_index, (mat[index] / DIV_VALUE));
+		//atomicAdd(mat + b_index, (mat[index] / DIV_VALUE));
 	}
 //	}
 //	if (j == cols - 1){
