@@ -25,7 +25,7 @@ $(MAT_MUL):$(SRC)$(MAT_MUL).cu
 	$(NVCC) $(SRC)abft.cu $(SRC)$(MAT_MUL).cu -o $(MAT_MUL) $(NVCCFLAGS) $(GENCODE) $(FI)
 
 sgemv:
-	$(NVCC) $(SRC)sgemv_compare.cu -o sgemv $(NVCCFLAGS) $(GENCODE) $(FI)	
+	$(NVCC) $(SRC)sgemv_compare.cu -o sgemv $(NVCCFLAGS) $(GENCODE) $(FI)	-lopenblas 
 
 clean:
 	rm -f $(TARGET) *.o

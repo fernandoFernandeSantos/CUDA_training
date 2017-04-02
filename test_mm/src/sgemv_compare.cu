@@ -16,6 +16,7 @@ int main(int argc, char** argv)
 	for (int j = 0; j < 10; ++j) {
 
 		m = 16 << j;
+		n = 16 << j;
 
 // n = m;
 
