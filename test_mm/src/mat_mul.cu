@@ -4,6 +4,7 @@
 #include "cuda.h"
 #include <math.h>
 #include "abft.h"
+#include <string.h>
 #define PRINT_TYPE double
 
 inline double mysecond() {
@@ -59,10 +60,10 @@ void inline fill_array(float_t *arr, float_t val, long_t n) {
 }
 
 void matrix_multiplication_abft() {
-	long lin_a = 20;//0;//5;//96;
-	long col_a = 12;//5;//5;//48;
+	long lin_a = 20; //0;//5;//96;
+	long col_a = 12; //5;//5;//48;
 	long lin_b = col_a; //48;
-	long col_b = 14;//0;//2;//92;
+	long col_b = 14; //0;//2;//92;
 	long vec_siz_a = ((lin_a) * (col_a));
 	long vec_siz_b = ((lin_b) * (col_b));
 	long vec_siz_c = ((lin_a) * (col_b));
@@ -86,9 +87,8 @@ void matrix_multiplication_abft() {
 	cudaMemcpy(device_array_a, host_array_a, siz_a, cudaMemcpyHostToDevice);
 	cudaMemcpy(device_array_b, host_array_b, siz_b, cudaMemcpyHostToDevice);
 
-
-
-	calc_checksums_from_host(device_array_a, device_array_b, lin_a, col_a, lin_b, col_b);
+	calc_checksums_from_host(device_array_a, device_array_b, lin_a, col_a,
+			lin_b, col_b);
 
 	float_t *check_col, *check_row;
 	float_t *h_check_col, *h_check_row;
@@ -186,7 +186,41 @@ void matrix_multiplication_abft() {
 //	free_error_return(&temp);
 }
 
-int main(void) {
-	matrix_multiplication_abft();
+__global__ void sqrt_streams(float *x, int n) {
+	int tid = threadIdx.x + blockIdx.x * blockDim.x;
+	for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
+		x[i] = sqrt(pow(3.14159, i));
+	}
+}
+
+void vector_streams() {
+	const int num_streams = 8;
+	const int N = 1 << 20;
+	cudaStream_t streams[num_streams];
+	float *data[num_streams];
+
+	for (int i = 0; i < num_streams; i++) {
+		cudaStreamCreate(&streams[i]);
+
+		cudaMalloc(&data[i], N * sizeof(float));
+
+		// launch one worker kernel per stream
+		sqrt_streams<<<1, 64, 0, streams[i]>>>(data[i], N);
+
+	}
+
+	for (int i = 0; i < num_streams; i++)
+		cudaFree(data[i]);
+	cudaDeviceReset();
+}
+
+int main(int argc, char **argv) {
+	if (strcmp(argv[1], "matmul") == 0) {
+		vector_streams();
+	} else if (strcmp(argv[1], "matabft") == 0) {
+		matrix_multiplication_abft();
+	} else {
+		printf("Argument not valid\n");
+	}
 	return 0;
 }
