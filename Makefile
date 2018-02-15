@@ -31,6 +31,10 @@ sgemv:
 	
 streams:
 	$(NVCC) --default-stream per-thread test_streams/streams.cu -o test_streams/streams $(NVCCFLAGS) $(GENCODE) 
+	
+streams_kernel:
+		$(NVCC) --default-stream per-thread test_streams/streams_kernel.cu -o test_streams/streams_kernel $(NVCCFLAGS) $(GENCODE) 
+	
 
 clean:
 	rm -f $(TARGET) *.o
