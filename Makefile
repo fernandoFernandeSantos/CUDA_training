@@ -27,10 +27,10 @@ $(MAT_MUL):$(SRC)$(MAT_MUL).cu
 	$(NVCC) --default-stream per-thread $(SRC)abft.cu $(SRC)$(MAT_MUL).cu -o $(MAT_MUL) $(NVCCFLAGS) $(GENCODE) $(FI)
 
 sgemv:
-	$(NVCC) test_streams/sgemv_compare.cu -o test_streams/sgemv $(NVCCFLAGS) $(GENCODE) $(FI)	-lopenblas 
+	$(NVCC) sgemv_compare.cu -o test_streams/sgemv $(NVCCFLAGS) $(GENCODE) $(FI)	-lopenblas 
 	
 streams:
-	$(NVCC) --default-stream per-thread $(SRC)streams.cu -o streams $(NVCCFLAGS) $(GENCODE) 
+	$(NVCC) --default-stream per-thread test_streams/streams.cu -o test_streams/streams $(NVCCFLAGS) $(GENCODE) 
 
 clean:
 	rm -f $(TARGET) *.o
