@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <sys/syscall.h>
+
 
 const int N = 1 << 20;
 
@@ -44,7 +45,7 @@ typedef struct {
 void *launch_sgemm(void *data) {
 	thread_parameters *parameter = (thread_parameters*) data;
 
-	printf("Thread Id: %d a_col %d a_lin %d b_col %d b_lin %d\n", getpid(),
+	printf("Thread Id: %d a_col %d a_lin %d b_col %d b_lin %d\n", syscall(SYS_gettid),
 			parameter->a_col_size, parameter->a_lin_size, parameter->b_col_size,
 			parameter->b_lin_size);
 
