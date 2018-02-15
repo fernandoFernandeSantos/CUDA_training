@@ -216,6 +216,7 @@ void vector_streams() {
 
 int main(int argc, char **argv) {
 	if (strcmp(argv[1], "matmul") == 0) {
+		printf("Executing %s\n", argv[1]);
 		vector_streams();
 	} else if (strcmp(argv[1], "matabft") == 0) {
 		matrix_multiplication_abft();
