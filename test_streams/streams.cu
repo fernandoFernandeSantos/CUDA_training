@@ -108,7 +108,7 @@ int main() {
 	pthread_t threads[num_threads];
 	thread_parameters data[num_threads];
 	for (int i = 0; i < num_threads; i++)
-		data[i] = fill_data(512, 512, 512);
+		data[i] = fill_data(1024, 1024, 1024);
 
 	for (int i = 0; i < num_threads; i++) {
 
