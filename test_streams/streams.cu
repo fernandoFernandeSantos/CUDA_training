@@ -7,7 +7,7 @@ __global__ void kernel(float *x, int n) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 	for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
 		double sum = 0;
-		for (int j = 100; j < N; j++){
+		for (int j = 1; j < n * 10; j++){
 			sum += sqrt(pow(3.14159, i))/j;
 		}
 		x[i] = sum;
