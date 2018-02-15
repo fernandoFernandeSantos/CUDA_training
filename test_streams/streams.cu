@@ -63,7 +63,7 @@ int main() {
 		data[i].b_col_size = i * 3 + 2;
 		data[i].b_lin_size = i * i + 3;
 
-		if (pthread_create(&threads[i], NULL, launch_sgemm, 0)) {
+		if (pthread_create(&threads[i], NULL, launch_sgemm, &data[i])) {
 			fprintf(stderr, "Error creating threadn");
 			return 1;
 		}
