@@ -3,10 +3,11 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "cuda.h"
+#include "cublas_v2.h"
+#include "cusparse_v2.h"
 
-
-
-const int N = 1 << 20;
+typedef float Real;
 
 __global__ void kernel(float *x, int n) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -21,8 +22,9 @@ __global__ void kernel(float *x, int n) {
 
 void *launch_kernel(void *dummy) {
 	float *data;
-	cudaMalloc(&data, N * sizeof(float));
+	int N = 1 << 20;
 
+	cudaMalloc(&data, N * sizeof(float));
 	kernel<<<1, 64>>>(data, N);
 
 	cudaStreamSynchronize(0);
@@ -48,11 +50,65 @@ typedef struct {
 void *launch_sgemm(void *data) {
 	thread_parameters *parameter = (thread_parameters*) data;
 
-	printf("Thread Id: %d a_col %d a_lin %d b_col %d b_lin %d\n", syscall(SYS_gettid),
-			parameter->a_col_size, parameter->a_lin_size, parameter->b_col_size,
-			parameter->b_lin_size);
+	cudaStream_t stream;
+	cublasHandle_t handle;
+	cudaStreamCreate(&stream);
+	cublasCreate(&handle);
+	cublasSetStream(handle, stream);
+	//note cublas is column primary!
+	//need to transpose the order
+//	m input	number of rows of matrix op(A) and C.
+//	n input	number of columns of matrix op(B) and C.
+//	k input number of columns of op(A) and rows of op(B).
+//  lda == m
+//  ldb == k
+//  ldc == m
+//checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA, matrix_size.uiWA, &alpha, d_B, matrix_size.uiWB,
+	//d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
+	int lda = parameter->a_col_size;
+	int ldb = parameter->b_col_size;
+	int ldc = parameter->b_col_size;
+	Real alpha = 1.0f;
+	Real beta = 0.0f;
+	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, parameter->b_col_size, parameter->a_lin_size,
+			parameter->a_col_size, &alpha, parameter->b_device, ldb,
+			parameter->a_device, lda, &beta, parameter->c_device, ldc);
+
+	if (CUBLAS_STATUS_SUCCESS != ret) {
+		printf("pau no blas\n");
+		exit(-1);
+	}
+
+	cublasDestroy(handle);
+	cudaStreamSynchronize(0);
 
 	return NULL;
+}
+
+thread_parameters fill_data(int a_lin, int a_col, int b_col) {
+	thread_parameters ret;
+	ret.a_col_size = a_col;
+	ret.a_lin_size = a_lin;
+	ret.b_col_size = b_col;
+	ret.b_lin_size = ret.a_col_size;
+
+	cudaMalloc(&ret.a_device, sizeof(Real) * (ret.a_col_size * ret.a_lin_size));
+	cudaMalloc(&ret.b_device, sizeof(Real) * (ret.b_col_size * ret.b_lin_size));
+	cudaMalloc(&ret.c_device,
+			sizeof(Real) * (ret.a_lin_size) * (ret.b_col_size));
+
+	cudaMemset(&ret.a_device, 1,
+			sizeof(Real) * (ret.a_col_size * ret.a_lin_size));
+	cudaMemset(&ret.b_device, 1,
+			sizeof(Real) * (ret.b_col_size * ret.b_lin_size));
+	return ret;
+}
+
+void free_data(thread_parameters data) {
+	cudaFree(data.a_device);
+	cudaFree(data.b_device);
+	cudaFree(data.c_device);
+	data.a_col_size = data.a_lin_size = data.b_col_size = data.b_lin_size = 0;
 }
 
 int main() {
@@ -62,11 +118,7 @@ int main() {
 	thread_parameters data[num_threads];
 
 	for (int i = 0; i < num_threads; i++) {
-		data[i].a_col_size = i * 3;
-		data[i].a_lin_size = i * i;
-
-		data[i].b_col_size = i * 3 + 2;
-		data[i].b_lin_size = i * i + 3;
+		data[i] = fill_data(512, 512, 512);
 
 		if (pthread_create(&threads[i], NULL, launch_sgemm, &data[i])) {
 			fprintf(stderr, "Error creating threadn");
@@ -79,6 +131,7 @@ int main() {
 			fprintf(stderr, "Error joining threadn");
 			return 2;
 		}
+		free_data(data[i]);
 	}
 
 	cudaDeviceReset();
