@@ -11,7 +11,7 @@ __global__ void sqrt_streams(float *x, int n) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 	for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
 		float sum = 0;
-		for (int j = 1; j < n; j++){
+		for (int j = 1; j < 100; j++){
 			sum += sqrt(pow(3.14159, i))/j;
 		}
 		x[i] = sum;

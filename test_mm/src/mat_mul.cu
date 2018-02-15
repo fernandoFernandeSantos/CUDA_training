@@ -186,16 +186,7 @@ void matrix_multiplication_abft() {
 //	free_error_return(&temp);
 }
 
-__global__ void sqrt_streams(float *x, int n) {
-	int tid = threadIdx.x + blockIdx.x * blockDim.x;
-	for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
-		float sum = 0;
-		for (int j = 1; j < n; j++){
-			sum += sqrt(pow(3.14159, i))/j;
-		}
-		x[i] = sum;
-	}
-}
+
 
 int main(int argc, char **argv) {
 	matrix_multiplication_abft();
