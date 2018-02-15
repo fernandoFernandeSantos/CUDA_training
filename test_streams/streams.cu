@@ -83,15 +83,23 @@ thread_parameters fill_data(int a_lin, int a_col, int b_col) {
 	ret.b_col_size = b_col;
 	ret.b_lin_size = ret.a_col_size;
 
+	Real host_a[a_col * a_lin], host_b[b_col * a_col];
+	for(int i = 0; i < a_col * a_lin; i++)
+		host_a[i] = random() % 200;
+
+	for(int i = 0; i < b_col * a_col; i++)
+		host_b[i] = random() % 100;
+
 	cudaMalloc(&ret.a_device, sizeof(Real) * (ret.a_col_size * ret.a_lin_size));
 	cudaMalloc(&ret.b_device, sizeof(Real) * (ret.b_col_size * ret.b_lin_size));
 	cudaMalloc(&ret.c_device,
 			sizeof(Real) * (ret.a_lin_size) * (ret.b_col_size));
 
-	cudaMemset(&ret.a_device, 1,
-			sizeof(Real) * (ret.a_col_size * ret.a_lin_size));
-	cudaMemset(&ret.b_device, 1,
-			sizeof(Real) * (ret.b_col_size * ret.b_lin_size));
+
+	cudaMemcpy(ret.a_device, host_a, a_col * a_lin, cudaMemcpyHostToDevice);
+	cudaMemcpy(ret.b_device, host_b, b_col * a_col, cudaMemcpyHostToDevice);
+
+
 	return ret;
 }
 
