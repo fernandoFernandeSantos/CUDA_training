@@ -207,6 +207,8 @@ void vector_streams() {
 		// launch one worker kernel per stream
 		sqrt_streams<<<1, 64, 0, streams[i]>>>(data[i], N);
 
+		sqrt_streams<<<1, 1>>>(0, 0);
+
 	}
 
 	for (int i = 0; i < num_streams; i++)
