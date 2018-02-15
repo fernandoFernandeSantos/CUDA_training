@@ -55,27 +55,18 @@ void *launch_sgemm(void *data) {
 	cudaStreamCreate(&stream);
 	cublasCreate(&handle);
 	cublasSetStream(handle, stream);
-	//note cublas is column primary!
-	//need to transpose the order
-//	m input	number of rows of matrix op(A) and C.
-//	n input	number of columns of matrix op(B) and C.
-//	k input number of columns of op(A) and rows of op(B).
-//  lda == m
-//  ldb == k
-//  ldc == m
-//checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size.uiWB, matrix_size.uiHA, matrix_size.uiWA, &alpha, d_B, matrix_size.uiWB,
-	//d_A, matrix_size.uiWA, &beta, d_C, matrix_size.uiWB));
 	int lda = parameter->a_col_size;
 	int ldb = parameter->b_col_size;
 	int ldc = parameter->b_col_size;
 	Real alpha = 1.0f;
 	Real beta = 0.0f;
-	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, parameter->b_col_size, parameter->a_lin_size,
-			parameter->a_col_size, &alpha, parameter->b_device, ldb,
-			parameter->a_device, lda, &beta, parameter->c_device, ldc);
+	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+			parameter->b_col_size, parameter->a_lin_size, parameter->a_col_size,
+			&alpha, parameter->b_device, ldb, parameter->a_device, lda, &beta,
+			parameter->c_device, ldc);
 
 	if (CUBLAS_STATUS_SUCCESS != ret) {
-		printf("pau no blas\n");
+		printf("pau no blas %d\n", ret);
 		exit(-1);
 	}
 
@@ -116,9 +107,10 @@ int main() {
 
 	pthread_t threads[num_threads];
 	thread_parameters data[num_threads];
+	for (int i = 0; i < num_threads; i++)
+		data[i] = fill_data(512, 512, 512);
 
 	for (int i = 0; i < num_threads; i++) {
-		data[i] = fill_data(512, 512, 512);
 
 		if (pthread_create(&threads[i], NULL, launch_sgemm, &data[i])) {
 			fprintf(stderr, "Error creating threadn");
