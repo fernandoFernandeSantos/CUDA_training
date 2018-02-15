@@ -195,7 +195,7 @@ __global__ void sqrt_streams(float *x, int n) {
 
 void vector_streams() {
 	const int num_streams = 16;
-	const int N = 1 << 40;
+	const int N = 1 << 21;
 	cudaStream_t streams[num_streams];
 	float *data[num_streams];
 
