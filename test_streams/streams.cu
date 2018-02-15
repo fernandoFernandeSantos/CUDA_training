@@ -43,7 +43,7 @@ typedef struct {
 void *launch_sgemm(void *data) {
 	thread_parameters *parameter = (thread_parameters*) data;
 
-	printf("Thread Id: %d a_col %d a_lin %d b_col %d b_lin %d\n",
+	printf("Thread Id: %lu a_col %d a_lin %d b_col %d b_lin %d\n",
 			pthread_self(), parameter->a_col_size, parameter->a_lin_size,
 			parameter->b_col_size, parameter->b_lin_size);
 
