@@ -9,7 +9,7 @@ MAT_MUL = mat_mul
 GENCODE=-gencode arch=compute_35,code=sm_35 \
 		-gencode arch=compute_60,code=sm_60
 
-NVCCFLAGS = -L/usr/local/cuda-8.0/lib64/ -lcublas -lcublas_device -lcudadevrt -lcudart -rdc=true -I/usr/local/cuda-8.0/samples/common/inc/
+NVCCFLAGS = -L/usr/local/cuda-8.0/lib64/ -lcublas -lcublas_device -lcudadevrt -lcudart –default-stream per-thread  -I/usr/local/cuda-8.0/samples/common/inc/
 #-lcublas
 ifeq ($(DEBUG), 1)
 NVCCFLAGS += -G -g
