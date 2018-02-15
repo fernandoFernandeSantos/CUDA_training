@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdio.h>
+#include <unistd.h>
 
 const int N = 1 << 20;
 
@@ -43,9 +44,9 @@ typedef struct {
 void *launch_sgemm(void *data) {
 	thread_parameters *parameter = (thread_parameters*) data;
 
-	printf("Thread Id: %lu a_col %d a_lin %d b_col %d b_lin %d\n",
-			pthread_self(), parameter->a_col_size, parameter->a_lin_size,
-			parameter->b_col_size, parameter->b_lin_size);
+	printf("Thread Id: %d a_col %d a_lin %d b_col %d b_lin %d\n", getpid(),
+			parameter->a_col_size, parameter->a_lin_size, parameter->b_col_size,
+			parameter->b_lin_size);
 
 	return NULL;
 }
