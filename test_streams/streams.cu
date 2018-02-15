@@ -1,6 +1,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 
 const int N = 1 << 20;
