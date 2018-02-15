@@ -6,6 +6,7 @@ SRC=src/
 VEC_ADD = vec_add
 MAT_MUL = mat_mul
 
+
 GENCODE=-gencode arch=compute_35,code=sm_35 \
 		-gencode arch=compute_60,code=sm_60
 
@@ -27,6 +28,9 @@ $(MAT_MUL):$(SRC)$(MAT_MUL).cu
 
 sgemv:
 	$(NVCC) $(SRC)sgemv_compare.cu -o sgemv $(NVCCFLAGS) $(GENCODE) $(FI)	-lopenblas 
+	
+streams:
+	$(NVCC) $(SRC)streams.cu -o streams $(NVCCFLAGS) $(GENCODE) 
 
 clean:
 	rm -f $(TARGET) *.o
