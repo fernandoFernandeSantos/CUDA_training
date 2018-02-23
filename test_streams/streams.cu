@@ -52,7 +52,7 @@ void *launch_sgemm(void *data) {
 
 	cudaStream_t stream;
 	cublasHandle_t handle;
-	cudaStreamCreate(&stream);
+	cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
 	cublasCreate(&handle);
 	cublasSetStream(handle, stream);
 	int lda = parameter->a_col_size;
@@ -71,7 +71,7 @@ void *launch_sgemm(void *data) {
 	}
 
 	cublasDestroy(handle);
-	cudaStreamSynchronize(0);
+	cudaStreamSynchronize(stream);
 
 	return NULL;
 }
@@ -117,7 +117,7 @@ int main() {
 	pthread_t threads[num_threads];
 	thread_parameters data[num_threads];
 	for (int i = 0; i < num_threads; i++)
-		data[i] = fill_data(2048, 2048, 2048);
+		data[i] = fill_data(1024, 1024, 1024);
 
 	for (int i = 0; i < num_threads; i++) {
 
