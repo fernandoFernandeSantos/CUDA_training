@@ -12,7 +12,8 @@
 typedef float Real;
 
 inline void __cudaSafeCall(cudaError err, const char *file, const int line);
-inline void __cudaCheckError(const char *file, const int line, cudaStream_t stream);
+inline void __cudaCheckError(const char *file, const int line,
+		cudaStream_t stream);
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
@@ -62,7 +63,7 @@ __global__ void kernel(float *x, int n) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 	for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
 		double sum = 0;
-		for(int j = 0; j < 1000; j++){
+		for (int j = 0; j < 1000; j++) {
 			sum += sqrt(pow(3.14159, i)) / float(j);
 		}
 		x[i] = sum;
@@ -127,26 +128,29 @@ void *launch_sgemm(void *data) {
 	int ldc = parameter->b_col_size;
 	Real alpha = 1.0f;
 	Real beta = 0.0f;
-	cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-			parameter->b_col_size, parameter->a_lin_size, parameter->a_col_size,
-			&alpha, parameter->b_device, ldb, parameter->a_device, lda, &beta,
-			parameter->c_device, ldc);
 
 	dim3 threads;
 	dim3 blocks;
 	cuda_gridsize(&threads, &blocks,
-			parameter->a_col_size * parameter->a_lin_size, 1, 1);
-	kernel<<<blocks, threads, 0, stream>>>(parameter->a_device,
-			parameter->a_col_size * parameter->a_lin_size);
+			parameter->b_col_size * parameter->b_lin_size, 1, 1);
 
-	CudaCheckError(stream);
-	if (CUBLAS_STATUS_SUCCESS != ret) {
-		printf("pau no blas %d\n", ret);
-		exit(-1);
+	for (int i = 0; i < 10; i++) {
+		cublasStatus_t ret = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+				parameter->b_col_size, parameter->a_lin_size,
+				parameter->a_col_size, &alpha, parameter->b_device, ldb,
+				parameter->a_device, lda, &beta, parameter->c_device, ldc);
+
+		kernel<<<blocks, threads, 0, stream>>>(parameter->b_device,
+				parameter->b_col_size * parameter->b_lin_size);
+		CudaCheckError(stream);
+		if (CUBLAS_STATUS_SUCCESS != ret) {
+			printf("pau no blas %d\n", ret);
+			exit(-1);
+		}
 	}
 
 	cublasDestroy(handle);
-
+	cudaStreamDestroy(stream);
 	return NULL;
 }
 
@@ -191,19 +195,19 @@ int main() {
 	pthread_t threads[num_threads];
 	thread_parameters data[num_threads];
 	for (int i = 0; i < num_threads; i++)
-		data[i] = fill_data(3072, 3072, 8192);
+		data[i] = fill_data(256, 256, 512);
 
 	for (int i = 0; i < num_threads; i++) {
 
 		if (pthread_create(&threads[i], NULL, launch_sgemm, &data[i])) {
-			fprintf(stderr, "Error creating threadn");
+			fprintf(stderr, "Error creating thread\n");
 			return 1;
 		}
 	}
 
 	for (int i = 0; i < num_threads; i++) {
 		if (pthread_join(threads[i], NULL)) {
-			fprintf(stderr, "Error joining threadn");
+			fprintf(stderr, "Error joining thread\n");
 			return 2;
 		}
 		free_data(data[i]);
