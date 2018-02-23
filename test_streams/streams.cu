@@ -191,7 +191,7 @@ int main() {
 	pthread_t threads[num_threads];
 	thread_parameters data[num_threads];
 	for (int i = 0; i < num_threads; i++)
-		data[i] = fill_data(3072, 3072, 1024);
+		data[i] = fill_data(3072, 3072, 8192);
 
 	for (int i = 0; i < num_threads; i++) {
 
