@@ -12,7 +12,7 @@
 typedef float Real;
 
 inline void __cudaSafeCall(cudaError err, const char *file, const int line);
-inline void __cudaCheckError(const char *file, const int line);
+inline void __cudaCheckError(const char *file, const int line, cudaStream_t stream);
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
@@ -20,7 +20,7 @@ inline void __cudaCheckError(const char *file, const int line);
  */
 
 #define CudaSafeCall( err ) __cudaSafeCall( err, __FILE__, __LINE__ )
-#define CudaCheckError()    __cudaCheckError( __FILE__, __LINE__ )
+#define CudaCheckError(stream)    __cudaCheckError( __FILE__, __LINE__ , stream)
 
 void cuda_gridsize(dim3 *threads, dim3 *blocks, size_t x, size_t y = 1,
 		size_t z = 1);
@@ -36,7 +36,8 @@ inline void __cudaSafeCall(cudaError err, const char *file, const int line) {
 	return;
 }
 
-inline void __cudaCheckError(const char *file, const int line) {
+inline void __cudaCheckError(const char *file, const int line,
+		cudaStream_t stream) {
 	cudaError err = cudaGetLastError();
 	if (cudaSuccess != err) {
 		fprintf(stderr, "cudaCheckError() failed at %s:%i : %s\n", file, line,
@@ -46,7 +47,8 @@ inline void __cudaCheckError(const char *file, const int line) {
 
 	// More careful checking. However, this will affect performance.
 	// Comment away if needed.
-	err = cudaDeviceSynchronize();
+	err = cudaStreamSynchronize(stream);
+
 	if (cudaSuccess != err) {
 		fprintf(stderr, "cudaCheckError() with sync failed at %s:%i : %s\n",
 				file, line, cudaGetErrorString(err));
@@ -133,14 +135,13 @@ void *launch_sgemm(void *data) {
 	kernel<<<blocks, threads, 0, stream>>>(parameter->a_device,
 			parameter->a_col_size * parameter->a_lin_size);
 
-	CudaCheckError();
+	CudaCheckError(stream);
 	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas %d\n", ret);
 		exit(-1);
 	}
 
 	cublasDestroy(handle);
-	cudaStreamSynchronize(stream);
 
 	return NULL;
 }
