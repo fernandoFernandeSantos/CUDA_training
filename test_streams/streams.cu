@@ -7,16 +7,14 @@
 #include "cublas_v2.h"
 #include "cusparse_v2.h"
 
+#define BLOCK_SIZE 32
+
 typedef float Real;
 
 __global__ void kernel(float *x, int n) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 	for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
-		float sum = 0;
-		for (int j = 1; j < n; j++) {
-			sum += sqrt(pow(3.14159, i)) / j;
-		}
-		x[i] = sum;
+		x[i] = sqrt(pow(3.14159, i));
 	}
 }
 
@@ -30,6 +28,24 @@ void *launch_kernel(void *dummy) {
 	cudaStreamSynchronize(0);
 
 	return NULL;
+}
+
+//1D=(65536), 2D=(65536, 65536), 3D=(4096, 4096, 4096)
+void cuda_gridsize(dim3 *threads, dim3 *blocks, size_t x, size_t y, size_t z) {
+	int true_block_size = BLOCK_SIZE;
+	if (y == 1 && z == 1)
+		true_block_size = BLOCK_SIZE * BLOCK_SIZE;
+
+	long blocks_x = ceil(float(x) / float(true_block_size));
+	long threads_x = ceil(float(x) / float(blocks_x));
+	long blocks_y = ceil(float(y) / float(true_block_size));
+	long threads_y = ceil(float(y) / float(blocks_y));
+	long blocks_z = ceil(float(z) / float(true_block_size));
+	long threads_z = ceil(float(z) / float(blocks_z));
+
+	*blocks = dim3(blocks_x, blocks_y, blocks_z);
+	*threads = dim3(threads_x, threads_y, threads_z);
+
 }
 
 ///////////////////////////////////////////
@@ -64,6 +80,13 @@ void *launch_sgemm(void *data) {
 			parameter->b_col_size, parameter->a_lin_size, parameter->a_col_size,
 			&alpha, parameter->b_device, ldb, parameter->a_device, lda, &beta,
 			parameter->c_device, ldc);
+
+	dim3 threads;
+	dim3 blocks;
+	cuda_gridsize(&threads, &blocks,
+			parameter->a_col_size * parameter->a_lin_size, 1, 1);
+	kernel<<<blocks, threads, 0, stream>>>(parameter->a_device,
+			parameter->a_col_size * parameter->a_lin_size);
 
 	if (CUBLAS_STATUS_SUCCESS != ret) {
 		printf("pau no blas %d\n", ret);
@@ -112,12 +135,12 @@ void free_data(thread_parameters data) {
 }
 
 int main() {
-	const int num_threads = 8;
+	const int num_threads = 4;
 
 	pthread_t threads[num_threads];
 	thread_parameters data[num_threads];
 	for (int i = 0; i < num_threads; i++)
-		data[i] = fill_data(1024, 1024, 1024);
+		data[i] = fill_data(3072, 3072, 1024);
 
 	for (int i = 0; i < num_threads; i++) {
 
