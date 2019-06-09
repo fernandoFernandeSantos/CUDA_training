@@ -69,16 +69,18 @@ void gemm_execute_float(Parameters* p) {
 
 	cublasSetMathMode(p->handle, p->math_mode);
 
-	checkBlasFrameworkErrors(
-			cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n, p->k,
-					p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
-					p->C.data, ldc));
+	for (int i = 0; i < 10; i++)
+
+		checkBlasFrameworkErrors(
+				cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n,
+						p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
+						p->C.data, ldc));
 
 }
 
 int main() {
 	int n_streams = 2;
-	int m = 8192;
+	int m = 8192 * 2;
 	int n = m;
 	int k = n;
 	float alpha = 0.1;
@@ -95,9 +97,9 @@ int main() {
 	std::cout << "Allocating GPU memory\n";
 
 	DeviceVector<float> A(m * n, 2.1);
-	DeviceVector<float> B(n * k, 0.4);
-	DeviceVector<float> C1(m * k, 1.0);
-	DeviceVector<float> C2(m * k, 0.3);
+	DeviceVector<float> B(n * k, 0.004);
+	DeviceVector<float> C1(m * k, -1.0);
+	DeviceVector<float> C2(m * k, -0.3);
 
 	std::cout << "Creating  parameters\n";
 
