@@ -110,9 +110,9 @@ int main() {
 
 	thread_vector.push_back(std::thread(gemm_execute_float, &p_no_tensor));
 
-//	std::cout << "Starting thread 2\n";
-//
-//	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
+	std::cout << "Starting thread 2\n";
+
+	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
 
 	std::cout << "Waiting threads\n";
 	for (auto &th : thread_vector) {
