@@ -75,6 +75,9 @@ void gemm_execute_float(Parameters* p) {
 				cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n,
 						p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
 						p->C.data, ldc));
+
+		checkFrameworkErrors(cudaPeekAtLastError());
+		checkFrameworkErrors(cudaDeviceSynchronize());
 	}
 	std::cout << "Thread " << p->id << " finished\n";
 
