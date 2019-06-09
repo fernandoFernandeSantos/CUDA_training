@@ -109,6 +109,7 @@ int main() {
 			stream_tensor.handle, 2);
 
 	std::cout << "Starting thread 1\n";
+	double start = mysecond();
 
 	thread_vector.push_back(std::thread(gemm_execute_float, &p_no_tensor));
 
@@ -122,6 +123,7 @@ int main() {
 			th.join();
 	}
 
+	std::cout << "Executing time " << mysecond() - start << std::endl;
 	return 0;
 }
 
