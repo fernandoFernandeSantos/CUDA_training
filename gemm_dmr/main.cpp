@@ -22,14 +22,14 @@ struct StreamHandle {
 
 	StreamHandle() {
 		checkFrameworkErrors(cudaStreamCreate(&stream));
-		(cublasCreate(&handle));
-		(cublasSetStream(handle, stream));
+		checkBlasFrameworkErrors(cublasCreate(&handle));
+		checkBlasFrameworkErrors(cublasSetStream(handle, stream));
 
 	}
 
 	~StreamHandle() {
-		(cudaStreamDestroy(stream));
-		(cublasDestroy(handle));
+		checkFrameworkErrors(cudaStreamDestroy(stream));
+		checkBlasFrameworkErrors(cublasDestroy(handle));
 	}
 
 };
@@ -63,14 +63,11 @@ void gemm_execute_float(Parameters* p) {
 
 	cublasSetMathMode(p->handle, p->math_mode);
 
-	cublasStatus_t status = cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N,
-			p->m, p->n, p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
-			p->C.data, ldc);
+	checkBlasFrameworkErrors(
+			cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n, p->k,
+					p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
+					p->C.data, ldc));
 
-	if (status == CUBLAS_STATUS_SUCCESS) {
-		return;
-	}
-	std::cout << "CUDA cuBLAS Framework error: " << status << " Bailing.\n";
 }
 
 int main() {

@@ -27,6 +27,22 @@ void __checkFrameworkErrors(cudaError_t error, int line, const char* file) {
 	exit (EXIT_FAILURE);
 }
 
+
+#define checkBlasFrameworkErrors(error) __checkBlasFrameworkErrors(error, __LINE__, __FILE__)
+
+void __checkBlasFrameworkErrors(cublasStatus_t status, int line, const char* file) {
+	if (status == CUBLAS_STATUS_SUCCESS) {
+		return;
+	}
+	char errorDescription[250];
+	snprintf(errorDescription, 250, "CUDA cuBLAS Framework error: %d. Bailing.",
+			status);
+
+	printf("%s - Line: %d at %s\n", errorDescription, line, file);
+	exit (EXIT_FAILURE);
+}
+
+
 cudaDeviceProp GetDevice() {
 //================== Retrieve and set the default CUDA device
 	cudaDeviceProp prop;
