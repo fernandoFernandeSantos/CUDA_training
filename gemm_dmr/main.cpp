@@ -48,7 +48,7 @@ struct Parameters {
 	const float* beta;
 	int m, n, k, id;
 	const cublasMath_t math_mode;
-	const cublasHandle_t& handle;
+	const cublasHandle_t handle;
 
 	Parameters(const DeviceVector<float>& A, const DeviceVector<float>& B,
 			DeviceVector<float>& C, const float* alpha, const float* beta,
