@@ -79,7 +79,9 @@ int main() {
 	float beta = 0.3;
 
 	std::cout << "Allocating streams\n";
-	std::vector<StreamHandle> streams(n_streams);
+	StreamHandle stream_no_tensor;
+	StreamHandle stream_tensor;
+
 	std::cout << "Allocating thread array\n";
 
 	std::vector < std::thread > thread_vector;
@@ -94,17 +96,17 @@ int main() {
 	std::cout << "Creating  parameters\n";
 
 	Parameters p_no_tensor(A, B, C1, &alpha, &beta, m, n, k,
-			CUBLAS_DEFAULT_MATH, streams[0].handle, 1);
+			CUBLAS_DEFAULT_MATH, stream_no_tensor.handle, 1);
 	Parameters p_tensor(A, B, C2, &alpha, &beta, m, n, k, CUBLAS_TENSOR_OP_MATH,
-			streams[1].handle, 2);
+			stream_tensor.handle, 2);
 
 	std::cout << "Starting thread 1\n";
 
 	thread_vector.push_back(std::thread(gemm_execute_float, &p_no_tensor));
 
-	std::cout << "Starting thread 2\n";
-
-	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
+//	std::cout << "Starting thread 2\n";
+//
+//	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
 
 	std::cout << "Joining threads\n";
 	for (auto &th : thread_vector) {
