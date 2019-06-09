@@ -119,7 +119,7 @@ int main() {
 	int n = m;
 	int k = n;
 	MAIN_TYPE alpha = 0.1;
-	MAIN_TYPE beta = 0.3;
+	MAIN_TYPE beta = 0.0;
 
 	std::cout << "Allocating streams\n";
 	StreamHandle stream_no_tensor;
