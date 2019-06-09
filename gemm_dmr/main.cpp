@@ -1,9 +1,11 @@
 #include <thread>
 #include <iostream>
-#include <cublas.h>
-
 #include <vector>
 #include <thread>
+
+#define CUDA_API_PER_THREAD_DEFAULT_STREAM 1
+
+#include <cublas.h>
 #include "cublas_v2.h"
 #include <cuda_fp16.h>
 
@@ -17,7 +19,7 @@ struct StreamHandle {
 	cublasHandle_t handle;
 
 	StreamHandle() {
-		checkFrameworkErrors(cudaStreamCreateWithFlags(&stream, 0x2));
+		checkFrameworkErrors(cudaStreamCreate(&stream));
 		(cublasCreate(&handle));
 		(cublasSetStream(handle, stream));
 
