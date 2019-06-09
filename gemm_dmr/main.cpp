@@ -15,6 +15,8 @@
 
 #include <iostream>
 
+#define ITERATIONS 100
+
 struct StreamHandle {
 
 	cudaStream_t stream;
@@ -70,7 +72,7 @@ void gemm_execute_float(Parameters* p) {
 
 	cublasSetMathMode(p->handle, p->math_mode);
 
-	for (int i = 0; i < 10; i++){
+	for (int i = 0; i < ITERATIONS; i++){
 
 		checkBlasFrameworkErrors(
 				cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n,
@@ -87,7 +89,7 @@ void gemm_execute_float(Parameters* p) {
 
 int main() {
 	int n_streams = 2;
-	int m = 8192 * 2;
+	int m = 8192;
 	int n = m;
 	int k = n;
 	float alpha = 0.1;
