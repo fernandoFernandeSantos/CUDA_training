@@ -63,8 +63,9 @@ void gemm_execute_float(Parameters* p) {
 
 	cublasSetMathMode(p->handle, p->math_mode);
 
-	cublasStatus_t status = cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n,
-			p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta, p->C.data, ldc);
+	cublasStatus_t status = cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N,
+			p->m, p->n, p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
+			p->C.data, ldc);
 }
 
 int main() {
@@ -79,7 +80,7 @@ int main() {
 	std::vector<StreamHandle> streams(n_streams);
 	std::cout << "Allocating thread array\n";
 
-	std::vector<std::thread> thread_vector;
+	std::vector < std::thread > thread_vector;
 
 	std::cout << "Allocating GPU memory\n";
 
@@ -92,17 +93,22 @@ int main() {
 
 	Parameters p_no_tensor(A, B, C1, &alpha, &beta, m, n, k,
 			CUBLAS_DEFAULT_MATH, streams[0].handle);
-	Parameters p_tensor(A, B, C2, &alpha, &beta, m, n, k,
-					CUBLAS_TENSOR_OP_MATH, streams[1].handle);
+	Parameters p_tensor(A, B, C2, &alpha, &beta, m, n, k, CUBLAS_TENSOR_OP_MATH,
+			streams[1].handle);
 
 	std::cout << "Starting thread 1\n";
 
-	thread_vector.push_back(
-			std::thread(gemm_execute_float, &p_no_tensor));
+	thread_vector.push_back(std::thread(gemm_execute_float, &p_no_tensor));
 
 	std::cout << "Starting thread 2\n";
 
-	thread_vector.push_back(
-			std::thread(gemm_execute_float, &p_tensor));
+	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
+
+	for (auto &th : thread_vector) {
+		if (th.joinable())
+			th.join();
+	}
+
+	return 0;
 }
 
