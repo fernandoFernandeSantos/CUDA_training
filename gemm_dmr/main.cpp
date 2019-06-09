@@ -49,13 +49,14 @@ struct Parameters {
 	int m, n, k, id;
 	const cublasMath_t math_mode;
 	const cublasHandle_t handle;
+	const cudaStream_t stream;
 
 	Parameters(const DeviceVector<float>& A, const DeviceVector<float>& B,
 			DeviceVector<float>& C, const float* alpha, const float* beta,
 			int m, int n, int k, const cublasMath_t math_mode,
-			const cublasHandle_t handle, int id) :
+			const cublasHandle_t handle, int id, const cudaStream_t stream) :
 			A(A), B(B), C(C), alpha(alpha), beta(beta), m(m), n(n), k(k), math_mode(
-					math_mode), handle(handle), id(id) {
+					math_mode), handle(handle), id(id), stream(stream) {
 
 	}
 };
@@ -76,9 +77,10 @@ void gemm_execute_float(Parameters* p) {
 						p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
 						p->C.data, ldc));
 
-		checkFrameworkErrors(cudaPeekAtLastError());
-		checkFrameworkErrors(cudaDeviceSynchronize());
 	}
+
+	checkFrameworkErrors(cudaPeekAtLastError());
+	checkFrameworkErrors(cudaStreamSynchronize(p->stream));
 	std::cout << "Thread " << p->id << " finished\n";
 
 }
@@ -109,9 +111,9 @@ int main() {
 	std::cout << "Creating  parameters\n";
 
 	Parameters p_no_tensor(A, B, C1, &alpha, &beta, m, n, k,
-			CUBLAS_DEFAULT_MATH, stream_no_tensor.handle, 1);
+			CUBLAS_DEFAULT_MATH, stream_no_tensor.handle, 1, stream_no_tensor.stream);
 	Parameters p_tensor(A, B, C2, &alpha, &beta, m, n, k, CUBLAS_TENSOR_OP_MATH,
-			stream_tensor.handle, 2);
+			stream_tensor.handle, 2, stream_tensor.stream);
 
 	std::cout << "Starting thread 1\n";
 	double start = mysecond();
