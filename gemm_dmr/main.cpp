@@ -89,7 +89,7 @@ void gemm_execute_float(Parameters* p) {
 
 int main() {
 	int n_streams = 2;
-	int m = 2048;
+	int m = 4096;
 	int n = m;
 	int k = n;
 	float alpha = 0.1;
