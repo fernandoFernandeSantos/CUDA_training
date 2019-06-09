@@ -40,22 +40,22 @@ struct Parameters {
 	DeviceVector<float>& C;
 	const float* alpha;
 	const float* beta;
-	int m, n, k;
+	int m, n, k, id;
 	const cublasMath_t math_mode;
 	const cublasHandle_t& handle;
 
 	Parameters(const DeviceVector<float>& A, const DeviceVector<float>& B,
 			DeviceVector<float>& C, const float* alpha, const float* beta,
 			int m, int n, int k, const cublasMath_t math_mode,
-			const cublasHandle_t handle) :
+			const cublasHandle_t handle, int id) :
 			A(A), B(B), C(C), alpha(alpha), beta(beta), m(m), n(n), k(k), math_mode(
-					math_mode), handle(handle) {
+					math_mode), handle(handle), id(id) {
 
 	}
 };
 
 void gemm_execute_float(Parameters* p) {
-	std::cout << "Thread 1 started\n";
+	std::cout << "Thread " << p->id << " started\n";
 
 	int lda = p->m;
 	int ldb = p->n;
@@ -66,6 +66,11 @@ void gemm_execute_float(Parameters* p) {
 	cublasStatus_t status = cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N,
 			p->m, p->n, p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
 			p->C.data, ldc);
+
+	if (status == CUBLAS_STATUS_SUCCESS) {
+		return;
+	}
+	std::cout << "CUDA cuBLAS Framework error: " << status << " Bailing.\n";
 }
 
 int main() {
@@ -92,9 +97,9 @@ int main() {
 	std::cout << "Creating  parameters\n";
 
 	Parameters p_no_tensor(A, B, C1, &alpha, &beta, m, n, k,
-			CUBLAS_DEFAULT_MATH, streams[0].handle);
+			CUBLAS_DEFAULT_MATH, streams[0].handle, 1);
 	Parameters p_tensor(A, B, C2, &alpha, &beta, m, n, k, CUBLAS_TENSOR_OP_MATH,
-			streams[1].handle);
+			streams[1].handle, 2);
 
 	std::cout << "Starting thread 1\n";
 
@@ -104,6 +109,7 @@ int main() {
 
 	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
 
+	std::cout << "Joining threads\n";
 	for (auto &th : thread_vector) {
 		if (th.joinable())
 			th.join();
