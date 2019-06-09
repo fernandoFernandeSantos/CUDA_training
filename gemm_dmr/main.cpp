@@ -69,12 +69,14 @@ void gemm_execute_float(Parameters* p) {
 
 	cublasSetMathMode(p->handle, p->math_mode);
 
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 10; i++){
 
 		checkBlasFrameworkErrors(
 				cublasSgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n,
 						p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
 						p->C.data, ldc));
+	}
+	std::cout << "Thread " << p->id << " finished\n";
 
 }
 
