@@ -13,6 +13,8 @@
 
 #include "cuda_utils.h"
 
+#include <iostream>
+
 struct StreamHandle {
 
 	cudaStream_t stream;
@@ -53,6 +55,8 @@ struct Parameters {
 };
 
 void gemm_execute_float(Parameters* p) {
+	std::cout << "Thread 1 started\n";
+
 	int lda = p->m;
 	int ldb = p->n;
 	int ldc = p->k;
@@ -71,22 +75,32 @@ int main() {
 	float alpha = 0.1;
 	float beta = 0.3;
 
+	std::cout << "Allocating streams\n";
 	std::vector<StreamHandle> streams(n_streams);
+	std::cout << "Allocating thread array\n";
 
 	std::vector<std::thread> thread_vector;
+
+	std::cout << "Allocating GPU memory\n";
 
 	DeviceVector<float> A(m * n, 2.1);
 	DeviceVector<float> B(n * k, 0.4);
 	DeviceVector<float> C1(m * k, 1.0);
 	DeviceVector<float> C2(m * k, 0.3);
 
+	std::cout << "Creating  parameters\n";
+
 	Parameters p_no_tensor(A, B, C1, &alpha, &beta, m, n, k,
 			CUBLAS_DEFAULT_MATH, streams[0].handle);
 	Parameters p_tensor(A, B, C2, &alpha, &beta, m, n, k,
 					CUBLAS_TENSOR_OP_MATH, streams[1].handle);
 
+	std::cout << "Starting thread 1\n";
+
 	thread_vector.push_back(
 			std::thread(gemm_execute_float, &p_no_tensor));
+
+	std::cout << "Starting thread 2\n";
 
 	thread_vector.push_back(
 			std::thread(gemm_execute_float, &p_tensor));
