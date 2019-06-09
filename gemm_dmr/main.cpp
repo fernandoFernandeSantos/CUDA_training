@@ -25,11 +25,17 @@ struct StreamHandle {
 		checkBlasFrameworkErrors(cublasCreate(&handle));
 		checkBlasFrameworkErrors(cublasSetStream(handle, stream));
 
+		checkFrameworkErrors(cudaPeekAtLastError());
+		checkFrameworkErrors(cudaDeviceSynchronize());
+
 	}
 
 	~StreamHandle() {
 		checkFrameworkErrors(cudaStreamDestroy(stream));
 		checkBlasFrameworkErrors(cublasDestroy(handle));
+		checkFrameworkErrors(cudaPeekAtLastError());
+		checkFrameworkErrors(cudaDeviceSynchronize());
+
 	}
 
 };
@@ -108,7 +114,7 @@ int main() {
 //
 //	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
 
-	std::cout << "Joining threads\n";
+	std::cout << "Waiting threads\n";
 	for (auto &th : thread_vector) {
 		if (th.joinable())
 			th.join();
