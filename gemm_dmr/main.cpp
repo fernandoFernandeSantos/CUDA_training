@@ -15,6 +15,7 @@
 
 #include <iostream>
 
+#define MAIN_TYPE half
 #define ITERATIONS 100
 
 struct StreamHandle {
@@ -42,19 +43,20 @@ struct StreamHandle {
 
 };
 
+template<typename T>
 struct Parameters {
-	const DeviceVector<float>& A;
-	const DeviceVector<float>& B;
-	DeviceVector<float>& C;
-	const float* alpha;
-	const float* beta;
+	const DeviceVector<T>& A;
+	const DeviceVector<T>& B;
+	DeviceVector<T>& C;
+	const T* alpha;
+	const T* beta;
 	int m, n, k, id;
 	const cublasMath_t math_mode;
 	const cublasHandle_t handle;
 	const cudaStream_t stream;
 
-	Parameters(const DeviceVector<float>& A, const DeviceVector<float>& B,
-			DeviceVector<float>& C, const float* alpha, const float* beta,
+	Parameters(const DeviceVector<T>& A, const DeviceVector<T>& B,
+			DeviceVector<T>& C, const T* alpha, const T* beta,
 			int m, int n, int k, const cublasMath_t math_mode,
 			const cublasHandle_t handle, int id, const cudaStream_t stream) :
 			A(A), B(B), C(C), alpha(alpha), beta(beta), m(m), n(n), k(k), math_mode(
@@ -63,7 +65,7 @@ struct Parameters {
 	}
 };
 
-void gemm_execute_float(Parameters* p) {
+void gemm_execute_float(Parameters<float>* p) {
 	std::cout << "Thread " << p->id << " started\n";
 
 	int lda = p->m;
@@ -87,13 +89,37 @@ void gemm_execute_float(Parameters* p) {
 
 }
 
+void gemm_execute_half(Parameters<half>* p) {
+	std::cout << "Thread " << p->id << " started\n";
+
+	int lda = p->m;
+	int ldb = p->n;
+	int ldc = p->k;
+
+	cublasSetMathMode(p->handle, p->math_mode);
+
+	for (int i = 0; i < ITERATIONS; i++){
+
+		checkBlasFrameworkErrors(
+				cublasHgemm(p->handle, CUBLAS_OP_N, CUBLAS_OP_N, p->m, p->n,
+						p->k, p->alpha, p->A.data, lda, p->B.data, ldb, p->beta,
+						p->C.data, ldc));
+
+	}
+
+	checkFrameworkErrors(cudaPeekAtLastError());
+	checkFrameworkErrors(cudaStreamSynchronize(p->stream));
+	std::cout << "Thread " << p->id << " finished\n";
+
+}
+
 int main() {
 	int n_streams = 2;
 	int m = 4096;
 	int n = m;
 	int k = n;
-	float alpha = 0.1;
-	float beta = 0.3;
+	MAIN_TYPE alpha = 0.1;
+	MAIN_TYPE beta = 0.3;
 
 	std::cout << "Allocating streams\n";
 	StreamHandle stream_no_tensor;
@@ -105,26 +131,26 @@ int main() {
 
 	std::cout << "Allocating GPU memory\n";
 
-	DeviceVector<float> A(m * n, 2.1);
-	DeviceVector<float> B(n * k, 0.004);
-	DeviceVector<float> C1(m * k, -1.0);
-	DeviceVector<float> C2(m * k, -0.3);
+	DeviceVector<MAIN_TYPE> A(m * n, 2.1);
+	DeviceVector<MAIN_TYPE> B(n * k, 0.004);
+	DeviceVector<MAIN_TYPE> C1(m * k, -1.0);
+	DeviceVector<MAIN_TYPE> C2(m * k, -0.3);
 
 	std::cout << "Creating  parameters\n";
 
-	Parameters p_no_tensor(A, B, C1, &alpha, &beta, m, n, k,
+	Parameters<MAIN_TYPE> p_no_tensor(A, B, C1, &alpha, &beta, m, n, k,
 			CUBLAS_DEFAULT_MATH, stream_no_tensor.handle, 1, stream_no_tensor.stream);
-	Parameters p_tensor(A, B, C2, &alpha, &beta, m, n, k, CUBLAS_TENSOR_OP_MATH,
+	Parameters<MAIN_TYPE> p_tensor(A, B, C2, &alpha, &beta, m, n, k, CUBLAS_TENSOR_OP_MATH,
 			stream_tensor.handle, 2, stream_tensor.stream);
 
 	std::cout << "Starting thread 1\n";
 	double start = mysecond();
 
-	thread_vector.push_back(std::thread(gemm_execute_float, &p_no_tensor));
+	thread_vector.push_back(std::thread(gemm_execute_half, &p_no_tensor));
 
 	std::cout << "Starting thread 2\n";
 
-	thread_vector.push_back(std::thread(gemm_execute_float, &p_tensor));
+	thread_vector.push_back(std::thread(gemm_execute_half, &p_tensor));
 
 	std::cout << "Waiting threads\n";
 	for (auto &th : thread_vector) {
