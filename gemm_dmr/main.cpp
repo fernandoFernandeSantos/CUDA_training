@@ -119,8 +119,7 @@ int main() {
 
 	std::cout << "Waiting threads\n";
 	for (auto &th : thread_vector) {
-		if (th.joinable())
-			th.join();
+		th.join();
 	}
 
 	std::cout << "Executing time " << mysecond() - start << std::endl;
