@@ -54,7 +54,7 @@ __global__ void copySharedMem(float *odata, float *idata, int width,
 		int height) {
 	PersistentKernel pk;
 	while(pk.keep_working()){
-		//pk.wait_for_work();
+		pk.wait_for_work();
 		process_data(odata, idata, width, height);
 		pk.iteration_finished();
 	}
