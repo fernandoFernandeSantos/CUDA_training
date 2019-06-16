@@ -137,12 +137,13 @@ struct PersistentKernel {
 //		, process_(process), threads_finished_(
 //					threads_finished) {
 //		this->local_execute = false;
+		sleep_cuda(1000);
+
 
 	}
 
 	__device__ void wait_for_work() {
 		while (this->process == 1){
-			sleep_cuda(1000);
 		}
 			;
 	}
