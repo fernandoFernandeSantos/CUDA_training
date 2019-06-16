@@ -125,7 +125,7 @@ struct PersistentKernel {
 
 	__device__ void iteration_finished() {
 //		this->process = 1;
-		atomicExch(this->process, 1);
+		atomicExch(&this->process, 1);
 	}
 
 	__device__ bool keep_working() {
