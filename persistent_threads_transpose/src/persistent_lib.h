@@ -124,7 +124,7 @@ struct PersistentKernel {
 			//g_mutex equal to blocks_to_synch
 			while (gpu_mutex < this->blocks_to_synch)
 				;
-			printf("GPU MUTEX %d\n", gpu_mutex);
+			printf("GPU MUTEX %d %d %d\n", gpu_mutex, threadIdx.x, threadIdx.y );
 
 		}
 		__syncthreads();
