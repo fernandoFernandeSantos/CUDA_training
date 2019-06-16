@@ -91,7 +91,7 @@ struct PersistentKernel {
 
 	__device__ PersistentKernel()	{
 		//thread ID in a block
-		this->tid_in_block = this->get_block_idx();
+		this->tid_in_block = threadIdx.x;
 		this->blocks_to_synch = gridDim.x * gridDim.y * gridDim.z;
 		this->local_process = false;
 	}
@@ -108,11 +108,6 @@ struct PersistentKernel {
 		__syncthreads();
 	}
 
-	__device__ uint32 get_block_idx() {
-		return blockIdx.x + blockIdx.y * gridDim.x
-				+ gridDim.x * gridDim.y * blockIdx.z;
-	}
-
 	__device__ void iteration_finished() {
 		this->local_process = true;
 		__syncthreads();
@@ -124,7 +119,6 @@ struct PersistentKernel {
 			//g_mutex equal to blocks_to_synch
 			while (gpu_mutex < this->blocks_to_synch)
 				;
-			printf("GPU MUTEX %d %d %d\n", gpu_mutex, threadIdx.x, threadIdx.y );
 
 		}
 		__syncthreads();
