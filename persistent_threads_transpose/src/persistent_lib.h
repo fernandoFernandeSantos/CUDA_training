@@ -94,8 +94,6 @@ struct PersistentKernel {
 		this->tid_in_block = this->get_block_idx();
 		this->blocks_to_synch = gridDim.x * gridDim.y * gridDim.z;
 		this->local_process = false;
-		printf("BLOCKS TO SYNC %d\n", this->blocks_to_synch);
-
 	}
 
 	__device__ void wait_for_work() {
@@ -111,8 +109,8 @@ struct PersistentKernel {
 	}
 
 	__device__ uint32 get_block_idx() {
-		return blockIdx.x + blockIdx.y * gridDim.x
-				+ gridDim.x * gridDim.y * blockIdx.z;
+		return blockIdx.x;// + blockIdx.y * gridDim.x
+				//+ gridDim.x * gridDim.y * blockIdx.z;
 	}
 
 	__device__ void iteration_finished() {
