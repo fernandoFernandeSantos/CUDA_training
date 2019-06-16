@@ -106,11 +106,12 @@ struct PersistentKernel {
 			}
 		}
 		__syncthreads();
+		printf("GPU MUTEX %d\n", gpu_mutex);
 	}
 
 	__device__ uint32 get_block_idx() {
-		return blockIdx.x;// + blockIdx.y * gridDim.x
-				//+ gridDim.x * gridDim.y * blockIdx.z;
+		return blockIdx.x + blockIdx.y * gridDim.x
+				+ gridDim.x * gridDim.y * blockIdx.z;
 	}
 
 	__device__ void iteration_finished() {
