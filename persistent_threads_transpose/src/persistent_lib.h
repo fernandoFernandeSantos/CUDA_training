@@ -11,10 +11,10 @@
 #define MAXTHREADNUMBER 2048
 
 typedef unsigned long long int64;
-typedef unsigned char byte;
+typedef unsigned int byte;
 
 __device__ bool running;
-__device__ int thread_flags[MAXTHREADNUMBER];
+__device__ byte thread_flags[MAXTHREADNUMBER];
 
 __device__ static void sleep_cuda(int64 clock_count) {
 	int64 start = clock64();
