@@ -137,8 +137,7 @@ struct PersistentKernel {
 //		, process_(process), threads_finished_(
 //					threads_finished) {
 //		this->local_execute = false;
-		sleep_cuda(1000);
-
+		this->process = 0;
 
 	}
 
