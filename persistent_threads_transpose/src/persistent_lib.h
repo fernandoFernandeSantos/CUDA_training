@@ -14,7 +14,7 @@ typedef unsigned long long int64;
 typedef unsigned char byte;
 
 __device__ bool running;
-__device__ byte thread_flags[MAXTHREADNUMBER];
+__device__ int thread_flags[MAXTHREADNUMBER];
 
 __device__ static void sleep_cuda(int64 clock_count) {
 	int64 start = clock64();
@@ -107,7 +107,7 @@ struct PersistentKernel {
 	}
 
 	__device__ void wait_for_work() {
-		while (this->process == 1) {
+		while (atomicCAS(&this->process, 0, 1) != 0) {
 		}
 	}
 
@@ -123,21 +123,12 @@ struct PersistentKernel {
 		return threadId;
 	}
 
-	__device__ void complete_work() {
-//		if (this->process_ == false && this->threads_finished_ == 0) {
-//			this->local_execute = false;
-//			return;
-//		}
-//
-//		if (this->process_ == true && this->local_execute == false) {
-//			atomicAdd(&this->threads_finished_, 1);
-//			this->local_execute = true;
-//		}
+	__device__ void iteration_finished() {
 		this->process = 1;
 
 	}
 
-	__device__ bool stop_working() {
+	__device__ bool keep_working() {
 		return this->running_;
 	}
 
