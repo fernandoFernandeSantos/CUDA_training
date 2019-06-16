@@ -152,7 +152,7 @@ struct PersistentKernel {
 		int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
 				+ (threadIdx.z * (blockDim.x * blockDim.y))
 				+ (threadIdx.y * blockDim.x) + threadIdx.x;
-		printf("THREAD ID %d\n", threadId);
+//		printf("THREAD ID %d\n", threadId);
 
 		return threadId;
 	}
