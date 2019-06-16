@@ -13,10 +13,7 @@
 typedef unsigned long long int64;
 typedef unsigned char byte;
 
-//__device__ int64 threads_finished = 0;
 __device__ bool running;
-//__device__ bool process;
-
 __device__ byte thread_flags[MAXTHREADNUMBER];
 
 __device__ static void sleep_cuda(int64 clock_count) {
@@ -82,14 +79,14 @@ struct HostPersistentControler {
 							MAXTHREADNUMBER, 0, cudaMemcpyDeviceToHost, st));
 			checkCudaErrors(cudaStreamSynchronize(st));
 			int counter = 0;
-			for (byte bt : host_thread_flags) {
+			for (auto bt : host_thread_flags) {
 				if (bt == 1)
 					counter++;
 			}
-			std::cout << "FINISHED " << counter << " " << thread_number
+			std::cout << "FINISHED " << counter << " " << this->thread_number
 					<< std::endl;
 
-			if (thread_number <= counter) {
+			if (this->thread_number <= counter) {
 				return;
 			}
 			sleep(1);
@@ -131,11 +128,11 @@ private:
 struct PersistentKernel {
 //	bool local_execute;
 	bool& running_;
-//	bool& process_;
+	byte& process;
 //	int64& threads_finished_;
 
 	__device__ PersistentKernel() :
-			running_(running) {
+			running_(running), process(thread_flags[get_global_idx()]) {
 
 //		, process_(process), threads_finished_(
 //					threads_finished) {
@@ -144,7 +141,7 @@ struct PersistentKernel {
 	}
 
 	__device__ void wait_for_work() {
-		while (thread_flags[get_global_idx()] == 1)
+		while (this->process == 1)
 			;
 	}
 
@@ -155,6 +152,7 @@ struct PersistentKernel {
 		int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
 				+ (threadIdx.z * (blockDim.x * blockDim.y))
 				+ (threadIdx.y * blockDim.x) + threadIdx.x;
+		printf("THREAD ID %d\n", threadId);
 
 		return threadId;
 	}
@@ -169,7 +167,7 @@ struct PersistentKernel {
 //			atomicAdd(&this->threads_finished_, 1);
 //			this->local_execute = true;
 //		}
-		thread_flags[get_global_idx()] = 1;
+		this->process = 1;
 
 	}
 
