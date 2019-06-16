@@ -65,7 +65,7 @@ struct HostPersistentControler {
 			std::cout << "FINISHED " << counter << " " << this->block_number
 					<< std::endl;
 
-			if (this->thread_number <= counter) {
+			if (this->block_number <= counter) {
 				return;
 			}
 			sleep(1);
