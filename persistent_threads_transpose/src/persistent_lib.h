@@ -16,7 +16,7 @@ typedef unsigned int uint32;
 typedef unsigned char byte;
 
 volatile __device__ byte running;
-volatile __device__ uint32 gpu_mutex;
+ __device__ uint32 gpu_mutex;
 
 __global__ void set_gpu_mutex(const uint32 value) {
 	gpu_mutex = value;
