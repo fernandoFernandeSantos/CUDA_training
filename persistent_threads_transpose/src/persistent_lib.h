@@ -89,13 +89,12 @@ struct PersistentKernel {
 	bool local_process;
 	uint32 tid_in_block;
 
-	__device__ PersistentKernel()
-//	:	thread_id(get_global_idx())
-	{
+	__device__ PersistentKernel()	{
 		//thread ID in a block
 		this->tid_in_block = this->get_block_idx();
 		this->blocks_to_synch = gridDim.x * gridDim.y * gridDim.z;
 		this->local_process = false;
+		printf("BLOCKS TO SYNC %d\n", this->blocks_to_synch);
 
 	}
 
