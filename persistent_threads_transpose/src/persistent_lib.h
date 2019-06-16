@@ -28,16 +28,15 @@ __global__ void set_gpu_running(const byte value) {
 
 struct HostPersistentControler {
 	cudaStream_t st;
-	uint32 thread_number;
-//	std::vector<byte> host_thread_flags;
-//	const std::vector<byte> zero_vector;
+	uint32 block_number;
 
-	HostPersistentControler(uint32 thread_number) :
-			thread_number(thread_number) {
+	HostPersistentControler(dim3 grid_dim) :
+			block_number(grid_dim.x * grid_dim.y * grid_dim.z) {
 		checkCudaErrors(
 				cudaStreamCreateWithFlags(&this->st, cudaStreamNonBlocking));
 
 		this->set_running(1);
+
 	}
 
 	virtual ~HostPersistentControler() {
@@ -63,7 +62,7 @@ struct HostPersistentControler {
 							this->st));
 			checkCudaErrors(cudaStreamSynchronize(this->st));
 
-			std::cout << "FINISHED " << counter << " " << this->thread_number
+			std::cout << "FINISHED " << counter << " " << this->block_number
 					<< std::endl;
 
 			if (this->thread_number <= counter) {

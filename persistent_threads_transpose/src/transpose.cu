@@ -222,8 +222,7 @@ int main(int argc, char **argv) {
 	checkCudaErrors(cudaMalloc((void **) &d_idata, mem_size));
 	checkCudaErrors(cudaMalloc((void **) &d_odata, mem_size));
 
-	HostPersistentControler main_control(
-			grid.x * grid.y * threads.x * threads.y);
+	HostPersistentControler main_control(grid);
 
 	// initialize host data
 	for (int i = 0; i < (size_x * size_y); ++i) {
