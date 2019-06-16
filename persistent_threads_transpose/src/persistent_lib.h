@@ -93,8 +93,7 @@ private:
 struct PersistentKernel {
 	uint32 thread_id;
 
-	__device__ PersistentKernel(){
-		this->thread_id = get_global_idx();
+	__device__ PersistentKernel() : thread_id(get_global_idx()){
 	}
 
 	__device__ void wait_for_work() {
