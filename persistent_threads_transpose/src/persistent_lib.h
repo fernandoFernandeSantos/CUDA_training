@@ -11,6 +11,7 @@
 #define MAXTHREADNUMBER 2048
 
 typedef unsigned long long int64;
+typedef unsigned int uint32;
 typedef unsigned int byte;
 
 __device__ bool running;
@@ -90,10 +91,9 @@ private:
 };
 
 struct PersistentKernel {
-//	bool local_execute;
 	bool& running_;
 	byte& process;
-//	int64& threads_finished_;
+	uint32 thread_id;
 
 	__device__ PersistentKernel() :
 			running_(running), process(thread_flags[get_global_idx()]) {
@@ -102,12 +102,14 @@ struct PersistentKernel {
 //					threads_finished) {
 //		this->local_execute = false;
 		this->process = 0;
+		this->thread_id = thread_flags[get_global_idx()];
 		//printf("PROCESS %d RUNNING %d thread_flagsi %d\n", process, running_, thread_flags[get_global_idx()]);
 
 	}
 
 	__device__ void wait_for_work() {
 		while (atomicCAS(&this->process, 0, 1) != 0) {
+			printf("ATOMIC %d %d\n", this->process, this->thread_id);
 		}
 	}
 
