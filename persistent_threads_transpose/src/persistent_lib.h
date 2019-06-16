@@ -14,8 +14,8 @@ typedef unsigned long long uint64;
 typedef unsigned int uint32;
 typedef unsigned char byte;
 
-__device__ bool running;
-__device__ byte thread_flags[MAXTHREADNUMBER];
+__device__ volatile bool running;
+__device__ volatile byte thread_flags[MAXTHREADNUMBER];
 
 __device__ static void sleep_cuda(uint64 clock_count) {
 	uint64 start = clock64();
