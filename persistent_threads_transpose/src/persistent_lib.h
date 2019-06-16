@@ -10,16 +10,16 @@
 
 #define MAXTHREADNUMBER 2048
 
-typedef unsigned long long int64;
+typedef unsigned long long uint64;
 typedef unsigned int uint32;
-typedef unsigned int byte;
+typedef unsigned char byte;
 
 __device__ bool running;
 __device__ byte thread_flags[MAXTHREADNUMBER];
 
-__device__ static void sleep_cuda(int64 clock_count) {
-	int64 start = clock64();
-	int64 clock_offset = 0;
+__device__ static void sleep_cuda(uint64 clock_count) {
+	uint64 start = clock64();
+	uint64 clock_offset = 0;
 	while (clock_offset < clock_count) {
 		clock_offset = clock64() - start;
 	}
@@ -27,11 +27,11 @@ __device__ static void sleep_cuda(int64 clock_count) {
 
 struct HostPersistentControler {
 	cudaStream_t st;
-	int64 thread_number;
+	uint64 thread_number;
 	std::vector<byte> host_thread_flags;
 	const std::vector<byte> zero_vector;
 
-	HostPersistentControler(int64 thread_number) :
+	HostPersistentControler(uint64 thread_number) :
 			thread_number(thread_number), zero_vector(
 					std::vector < byte > (MAXTHREADNUMBER, 0)) {
 		checkCudaErrors(
@@ -92,33 +92,25 @@ private:
 
 struct PersistentKernel {
 	bool& running_;
-	byte& process;
 	uint32 thread_id;
 
 	__device__ PersistentKernel() :
-			running_(running), process(thread_flags[get_global_idx()]) {
-
-//		, process_(process), threads_finished_(
-//					threads_finished) {
-//		this->local_execute = false;
-		this->process = 0;
+			running_(running) {
 		this->thread_id = get_global_idx();
-		//printf("PROCESS %d RUNNING %d thread_flagsi %d\n", process, running_, thread_flags[get_global_idx()]);
-
 	}
 
 	__device__ void wait_for_work() {
-		while (atomicCAS(&this->process, 0, 1) != 0) {
+		while (thread_flags[this->thread_id] == 1) {
 		}
 		printf("ATOMIC %d %d\n", this->process, this->thread_id);
 
 	}
 
-	__device__ int get_global_idx() {
-		int blockId = blockIdx.x + blockIdx.y * gridDim.x
+	__device__ uint32 get_global_idx() {
+		uint32 blockId = blockIdx.x + blockIdx.y * gridDim.x
 				+ gridDim.x * gridDim.y * blockIdx.z;
 
-		int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
+		uint32 threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
 				+ (threadIdx.z * (blockDim.x * blockDim.y))
 				+ (threadIdx.y * blockDim.x) + threadIdx.x;
 //		printf("THREAD ID %d\n", threadId);
@@ -127,8 +119,7 @@ struct PersistentKernel {
 	}
 
 	__device__ void iteration_finished() {
-//		this->process = 1;
-		atomicExch(&this->process, 1);
+		thread_flags[this->thread_id] = 1;
 	}
 
 	__device__ bool keep_working() {
