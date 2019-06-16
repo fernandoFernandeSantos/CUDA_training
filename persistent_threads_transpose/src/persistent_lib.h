@@ -56,7 +56,7 @@ struct HostPersistentControler {
 	void start_processing() {
 		uint32 tmp = 0;
 		checkCudaErrors(
-				cudaMemcpyToSymbolAsync(gpu_mutex, tmp, sizeof(uint32), 0,
+				cudaMemcpyToSymbolAsync(UINTCAST(gpu_mutex), UINTCAST(tmp), sizeof(uint32), 0,
 						cudaMemcpyHostToDevice, st));
 		checkCudaErrors(cudaStreamSynchronize(st));
 	}
