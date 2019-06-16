@@ -109,8 +109,9 @@ struct PersistentKernel {
 
 	__device__ void wait_for_work() {
 		while (atomicCAS(&this->process, 0, 1) != 0) {
-			printf("ATOMIC %d %d\n", this->process, this->thread_id);
 		}
+		printf("ATOMIC %d %d\n", this->process, this->thread_id);
+
 	}
 
 	__device__ int get_global_idx() {
