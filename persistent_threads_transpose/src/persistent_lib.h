@@ -17,10 +17,10 @@ typedef unsigned int uint32;
 
 typedef unsigned char byte;
 
-__device__       volatile byte running;
+volatile __device__ byte running;
 //__device__      volatile byte thread_flags[MAXTHREADNUMBER];
 
-__device__      volatile uint32 gpu_mutex;
+volatile __device__ uint32 gpu_mutex;
 
 __device__ static void sleep_cuda(uint64 clock_count) {
 	uint64 start = clock64();
