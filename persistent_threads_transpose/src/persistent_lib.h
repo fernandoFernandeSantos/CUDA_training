@@ -16,7 +16,7 @@ typedef unsigned int uint32;
 typedef unsigned char byte;
 
 volatile __device__ byte running;
- __device__ uint32 gpu_mutex;
+volatile __device__ uint32 gpu_mutex;
 
 __global__ void set_gpu_mutex(const uint32 value) {
 	gpu_mutex = value;
@@ -106,7 +106,6 @@ struct PersistentKernel {
 			}
 		}
 		__syncthreads();
-		printf("GPU MUTEX %d\n", gpu_mutex);
 	}
 
 	__device__ uint32 get_block_idx() {
@@ -125,6 +124,8 @@ struct PersistentKernel {
 			//g_mutex equal to blocks_to_synch
 			while (gpu_mutex < this->blocks_to_synch)
 				;
+			printf("GPU MUTEX %d\n", gpu_mutex);
+
 		}
 		__syncthreads();
 	}
