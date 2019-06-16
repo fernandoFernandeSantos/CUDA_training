@@ -102,7 +102,7 @@ struct PersistentKernel {
 	__device__ void wait_for_work() {
 		while (thread_flags[this->thread_id] == 1) {
 		}
-		printf("ATOMIC %d %d\n", thread_flags[this->thread_id], this->thread_id);
+		//printf("ATOMIC %d %d\n", thread_flags[this->thread_id], this->thread_id);
 
 	}
 
