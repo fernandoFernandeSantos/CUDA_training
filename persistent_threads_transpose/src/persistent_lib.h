@@ -35,8 +35,8 @@ struct HostPersistentControler {
 					std::vector < byte > (MAXTHREADNUMBER, 0)) {
 		checkCudaErrors(
 				cudaStreamCreateWithFlags(&this->st, cudaStreamNonBlocking));
-//		this->set_process(false);
-		this->set_running(false);
+
+		this->set_running(true);
 		this->host_thread_flags = std::vector < byte > (MAXTHREADNUMBER, 0);
 	}
 
@@ -44,34 +44,18 @@ struct HostPersistentControler {
 		checkCudaErrors(cudaStreamDestroy(this->st));
 	}
 
-	void start_kernel() {
-		this->set_running(true);
-	}
-
 	void end_kernel() {
 		this->set_running(false);
 	}
 
-	void start_process() {
-//		this->set_process(true);
-		this->reset_threads_finished();
-
-	}
-
-	void end_process() {
-//		this->set_process(false);
-	}
-
-	template<typename T>
-	void memcpy_from_stream(T* host_data, T* device_data, size_t size) {
+	void start_processing() {
 		checkCudaErrors(
-				cudaMemcpyAsync(host_data, device_data, size * sizeof(T),
-						cudaMemcpyDeviceToHost, this->st));
-
-		checkCudaErrors(cudaStreamSynchronize(this->st));
+				cudaMemcpyToSymbolAsync(thread_flags, this->zero_vector.data(),
+				MAXTHREADNUMBER, 0, cudaMemcpyHostToDevice, st));
+		checkCudaErrors(cudaStreamSynchronize(st));
 	}
 
-	void wait_cuda() {
+	void wait_gpu() {
 		while (true) {
 			checkCudaErrors(
 					cudaMemcpyFromSymbolAsync(this->host_thread_flags.data(),
@@ -93,16 +77,6 @@ struct HostPersistentControler {
 		}
 	}
 
-	void reset_threads_finished() {
-//		int64 tmp = 0;
-
-		checkCudaErrors(
-				cudaMemcpyToSymbolAsync(thread_flags, this->zero_vector.data(),
-						MAXTHREADNUMBER, 0, cudaMemcpyHostToDevice, st));
-		checkCudaErrors(cudaStreamSynchronize(st));
-
-	}
-
 private:
 	void set_running(bool value) {
 		std::cout << "Setting running to " << value << std::endl;
@@ -113,16 +87,6 @@ private:
 
 		std::cout << "Running set to " << value << std::endl;
 	}
-
-//	void set_process(bool value) {
-//		std::cout << "Setting process " << value << std::endl;
-//		checkCudaErrors(
-//				cudaMemcpyToSymbolAsync(process, &value, sizeof(bool), 0,
-//						cudaMemcpyHostToDevice, st));
-//		checkCudaErrors(cudaStreamSynchronize(st));
-//
-//		std::cout << "Process set to " << value << std::endl;
-//	}
 };
 
 struct PersistentKernel {
@@ -142,9 +106,8 @@ struct PersistentKernel {
 	}
 
 	__device__ void wait_for_work() {
-		while (this->process == 1){
+		while (this->process == 1) {
 		}
-			;
 	}
 
 	__device__ int get_global_idx() {
