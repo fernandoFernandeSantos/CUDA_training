@@ -10,12 +10,17 @@
 
 #define MAXTHREADNUMBER 2048
 
+#define UINTCAST(x) ((unsigned int*)(x))
+
 typedef unsigned long long uint64;
 typedef unsigned int uint32;
+
 typedef unsigned char byte;
 
-__device__ volatile byte running;
-__device__ volatile byte thread_flags[MAXTHREADNUMBER];
+__device__       volatile byte running;
+//__device__      volatile byte thread_flags[MAXTHREADNUMBER];
+
+__device__      volatile uint32 gpu_mutex;
 
 __device__ static void sleep_cuda(uint64 clock_count) {
 	uint64 start = clock64();
@@ -28,17 +33,16 @@ __device__ static void sleep_cuda(uint64 clock_count) {
 struct HostPersistentControler {
 	cudaStream_t st;
 	uint64 thread_number;
-	std::vector<byte> host_thread_flags;
-	const std::vector<byte> zero_vector;
+//	std::vector<byte> host_thread_flags;
+//	const std::vector<byte> zero_vector;
 
 	HostPersistentControler(uint64 thread_number) :
-			thread_number(thread_number), zero_vector(
-					std::vector < byte > (MAXTHREADNUMBER, 0)) {
+			thread_number(thread_number) {
 		checkCudaErrors(
 				cudaStreamCreateWithFlags(&this->st, cudaStreamNonBlocking));
 
-		this->set_running(true);
-		this->host_thread_flags = std::vector < byte > (MAXTHREADNUMBER, 0);
+		this->set_running(1);
+//		this->host_thread_flags = std::vector < byte > (MAXTHREADNUMBER, 0);
 	}
 
 	virtual ~HostPersistentControler() {
@@ -46,28 +50,24 @@ struct HostPersistentControler {
 	}
 
 	void end_kernel() {
-		this->set_running(false);
+		this->set_running(0);
 	}
 
 	void start_processing() {
 		checkCudaErrors(
-				cudaMemcpyToSymbolAsync(thread_flags, this->zero_vector.data(),
-				MAXTHREADNUMBER, 0, cudaMemcpyHostToDevice, st));
+				cudaMemcpyToSymbolAsync(gpu_mutex, 0, sizeof(uint32), 0,
+						cudaMemcpyHostToDevice, st));
 		checkCudaErrors(cudaStreamSynchronize(st));
 	}
 
 	void wait_gpu() {
 		while (true) {
+			uint32 counter;
 			checkCudaErrors(
-					cudaMemcpyFromSymbolAsync(this->host_thread_flags.data(),
-							thread_flags,
-							MAXTHREADNUMBER, 0, cudaMemcpyDeviceToHost, st));
+					cudaMemcpyFromSymbolAsync(&counter, gpu_mutex,
+							sizeof(uint32), 0, cudaMemcpyDeviceToHost, st));
 			checkCudaErrors(cudaStreamSynchronize(st));
-			int counter = 0;
-			for (auto bt : host_thread_flags) {
-				if (bt == 1)
-					counter++;
-			}
+
 			std::cout << "FINISHED " << counter << " " << this->thread_number
 					<< std::endl;
 
@@ -79,7 +79,7 @@ struct HostPersistentControler {
 	}
 
 private:
-	void set_running(bool value) {
+	void set_running(byte value) {
 		std::cout << "Setting running to " << value << std::endl;
 		checkCudaErrors(
 				cudaMemcpyToSymbolAsync(running, &value, sizeof(byte), 0,
@@ -91,21 +91,36 @@ private:
 };
 
 struct PersistentKernel {
-	uint32 thread_id;
+//	uint32 thread_id;
+	uint32 blocks_to_synch;
+	bool local_process;
+	uint32 tid_in_block;
 
-	__device__ PersistentKernel() : thread_id(get_global_idx()){
+	__device__ PersistentKernel()
+//	:	thread_id(get_global_idx())
+	{
+		//thread ID in a block
+		this->tid_in_block = this->get_block_idx();
+		this->blocks_to_synch = gridDim.x * gridDim.y * gridDim.z;
+		this->local_process = false;
+
 	}
 
 	__device__ void wait_for_work() {
-		while (thread_flags[this->thread_id] == 1) {
+		while (this->local_process) {
+			if (gpu_mutex == 0) {
+				this->local_process = false;
+			}
 		}
-		//printf("ATOMIC %d %d\n", thread_flags[this->thread_id], this->thread_id);
+	}
 
+	__device__ uint32 get_block_idx() {
+		return blockIdx.x + blockIdx.y * gridDim.x
+				+ gridDim.x * gridDim.y * blockIdx.z;
 	}
 
 	__device__ uint32 get_global_idx() {
-		uint32 blockId = blockIdx.x + blockIdx.y * gridDim.x
-				+ gridDim.x * gridDim.y * blockIdx.z;
+		uint32 blockId = this->get_block_idx();
 
 		uint32 threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
 				+ (threadIdx.z * (blockDim.x * blockDim.y))
@@ -115,8 +130,22 @@ struct PersistentKernel {
 		return threadId;
 	}
 
+	__device__ void __gpu_sync() {
+		__syncthreads();
+		// only thread 0 is used for synchronization
+		if (this->tid_in_block == 0) {
+			atomicAdd(UINTCAST(&gpu_mutex), 1);
+			//only when all blocks add 1 to g_mutex will
+			//g_mutex equal to blocks_to_synch
+			while (gpu_mutex < this->blocks_to_synch)
+				;
+		}
+		__syncthreads();
+	}
+
 	__device__ void iteration_finished() {
-		thread_flags[this->thread_id] = 1;
+		this->local_process = true;
+		this->__gpu_sync();
 	}
 
 	__device__ bool keep_working() {
