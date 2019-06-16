@@ -141,7 +141,9 @@ struct PersistentKernel {
 	}
 
 	__device__ void wait_for_work() {
-		while (this->process == 1)
+		while (this->process == 1){
+			sleep_cuda(1000);
+		}
 			;
 	}
 
