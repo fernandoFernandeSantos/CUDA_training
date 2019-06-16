@@ -102,7 +102,7 @@ struct PersistentKernel {
 //					threads_finished) {
 //		this->local_execute = false;
 		this->process = 0;
-		this->thread_id = thread_flags[get_global_idx()];
+		this->thread_id = get_global_idx();
 		//printf("PROCESS %d RUNNING %d thread_flagsi %d\n", process, running_, thread_flags[get_global_idx()]);
 
 	}
