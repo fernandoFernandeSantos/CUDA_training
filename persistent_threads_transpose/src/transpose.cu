@@ -222,7 +222,8 @@ int main(int argc, char **argv) {
 	checkCudaErrors(cudaMalloc((void **) &d_idata, mem_size));
 	checkCudaErrors(cudaMalloc((void **) &d_odata, mem_size));
 
-	HostPersistentControler main_control(grid.x * grid.y * threads.x * threads.y);
+	HostPersistentControler main_control(
+			grid.x * grid.y * threads.x * threads.y);
 
 	// initialize host data
 	for (int i = 0; i < (size_x * size_y); ++i) {
@@ -247,16 +248,16 @@ int main(int argc, char **argv) {
 			TILE_DIM, TILE_DIM, BLOCK_ROWS);
 
 	// Clear error status
-	checkCudaErrors (cudaGetLastError());
+	checkCudaErrors(cudaGetLastError());
 
-std	::cout << "New stream" << std::endl;
+	std::cout << "New stream" << std::endl;
 
 	std::cout << "Starting running kernel\n";
-	checkCudaErrors (cudaPeekAtLastError());
+	checkCudaErrors(cudaPeekAtLastError());
 
-checkCudaErrors	(cudaDeviceSynchronize());
+	checkCudaErrors(cudaDeviceSynchronize());
 
-std	::cout << "GRID " << grid.x << " " << grid.y << " threads " << threads.x
+	std::cout << "GRID " << grid.x << " " << grid.y << " threads " << threads.x
 			<< " " << threads.y << std::endl;
 
 	copySharedMem<<<grid, threads>>>(d_odata, d_idata, size_x, size_y);
@@ -266,15 +267,12 @@ std	::cout << "GRID " << grid.x << " " << grid.y << " threads " << threads.x
 	std::cout << "Trying persistent threads shared memory transpose"
 			<< std::endl;
 	size_t num_rep = 0;
-	main_control.start_kernel();
 
 	while (true) {
 		std::cout << "Start processing" << std::endl;
 
-		main_control.start_process();
-		main_control.wait_cuda();
-
-//		main_control.end_process();
+		main_control.start_processing();
+		main_control.wait_gpu();
 
 		std::cout << "Copy memory back to the host" << std::endl;
 
@@ -313,9 +311,9 @@ std	::cout << "GRID " << grid.x << " " << grid.y << " threads " << threads.x
 	std::cout << "Synchronizing the device" << std::endl;
 
 	checkCudaErrors(cudaDeviceSynchronize());
-	checkCudaErrors (cudaDeviceReset());
+	checkCudaErrors(cudaDeviceReset());
 
-printf	("Test passed\n");
+	printf("Test passed\n");
 	exit (EXIT_SUCCESS);
 
 }
