@@ -30,6 +30,11 @@ __device__ static void sleep_cuda(uint64 clock_count) {
 	}
 }
 
+__global__ void set_gpu_mutex(const uint32 value){
+	gpu_mutex = value;
+}
+
+
 struct HostPersistentControler {
 	cudaStream_t st;
 	uint64 thread_number;
@@ -54,10 +59,12 @@ struct HostPersistentControler {
 	}
 
 	void start_processing() {
-		uint32 tmp = 0;
-		checkCudaErrors(
-				cudaMemcpyToSymbolAsync(UINTCAST(gpu_mutex), UINTCAST(tmp), sizeof(uint32), 0,
-						cudaMemcpyHostToDevice, st));
+//		uint32 tmp = 0;
+//		checkCudaErrors(
+//				cudaMemcpyToSymbolAsync(UINTCAST(gpu_mutex), UINTCAST(tmp), sizeof(uint32), 0,
+//						cudaMemcpyHostToDevice, st));
+		set_gpu_mutex<<<1,1,0, this->st>>>(0);
+		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaStreamSynchronize(st));
 	}
 
