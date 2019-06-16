@@ -272,6 +272,7 @@ int main(int argc, char **argv) {
 		std::cout << "Start processing" << std::endl;
 
 		main_control.start_processing();
+
 		main_control.wait_gpu();
 
 		std::cout << "Copy memory back to the host" << std::endl;
