@@ -14,7 +14,7 @@ typedef unsigned long long uint64;
 typedef unsigned int uint32;
 typedef unsigned char byte;
 
-__device__ volatile bool running;
+__device__ volatile byte running;
 __device__ volatile byte thread_flags[MAXTHREADNUMBER];
 
 __device__ static void sleep_cuda(uint64 clock_count) {
@@ -82,7 +82,7 @@ private:
 	void set_running(bool value) {
 		std::cout << "Setting running to " << value << std::endl;
 		checkCudaErrors(
-				cudaMemcpyToSymbolAsync(running, &value, sizeof(bool), 0,
+				cudaMemcpyToSymbolAsync(running, &value, sizeof(byte), 0,
 						cudaMemcpyHostToDevice, st));
 		checkCudaErrors(cudaStreamSynchronize(st));
 
@@ -91,11 +91,9 @@ private:
 };
 
 struct PersistentKernel {
-	bool& running_;
 	uint32 thread_id;
 
-	__device__ PersistentKernel() :
-			running_(running) {
+	__device__ PersistentKernel(){
 		this->thread_id = get_global_idx();
 	}
 
@@ -123,7 +121,7 @@ struct PersistentKernel {
 	}
 
 	__device__ bool keep_working() {
-		return this->running_;
+		return running == 1;
 	}
 
 };
