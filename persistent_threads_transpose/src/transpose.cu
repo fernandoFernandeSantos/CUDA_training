@@ -274,9 +274,8 @@ std	::cout << "GRID " << grid.x << " " << grid.y << " threads " << threads.x
 		main_control.start_process();
 		main_control.wait_cuda();
 
-		main_control.end_process();
+//		main_control.end_process();
 
-		main_control.reset_threads_finished();
 		std::cout << "Copy memory back to the host" << std::endl;
 
 		checkCudaErrors(
