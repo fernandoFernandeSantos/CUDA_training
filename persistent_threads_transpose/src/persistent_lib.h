@@ -78,12 +78,12 @@ struct HostPersistentControler {
 
 private:
 	void set_running(byte value) {
-		std::cout << "Setting running to " << value << std::endl;
+		std::cout << "Setting running to " << bool(value) << std::endl;
 		set_gpu_running<<<1, 1, 0, this->st>>>(value);
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaStreamSynchronize(this->st));
 
-		std::cout << "Running set to " << value << std::endl;
+		std::cout << "Running set to " << bool(value) << std::endl;
 	}
 };
 
