@@ -15,7 +15,7 @@
 typedef unsigned int uint32;
 typedef unsigned char byte;
 
- __device__ byte running;
+volatile __device__ byte running;
 volatile __device__ uint32 gpu_mutex;
 
 __global__ void set_gpu_mutex(const uint32 value) {
@@ -49,6 +49,7 @@ struct HostPersistentControler {
 
 	void end_kernel() {
 		this->set_running(0);
+		checkCudaErrors(cudaDeviceSynchronize());
 	}
 
 	void start_processing() {

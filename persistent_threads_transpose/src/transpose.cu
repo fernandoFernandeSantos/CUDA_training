@@ -310,7 +310,6 @@ int main(int argc, char **argv) {
 
 	std::cout << "Synchronizing the device" << std::endl;
 
-	checkCudaErrors(cudaDeviceSynchronize());
 	checkCudaErrors(cudaDeviceReset());
 
 	printf("Test passed\n");
