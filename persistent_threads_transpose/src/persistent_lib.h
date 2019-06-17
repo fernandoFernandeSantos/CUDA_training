@@ -43,6 +43,10 @@ struct HostPersistentControler {
 		checkCudaErrors(cudaStreamDestroy(this->st));
 	}
 
+	void sync_stream(){
+		checkCudaErrors(cudaStreamSynchronize(this->st));
+	}
+
 	void end_kernel() {
 		this->set_running(0);
 	}
@@ -84,7 +88,6 @@ private:
 };
 
 struct PersistentKernel {
-//	uint32 thread_id;
 	uint32 blocks_to_synch;
 	bool local_process;
 	uint32 tid_in_block;

@@ -280,8 +280,7 @@ int main(int argc, char **argv) {
 				cudaMemcpyAsync(h_odata.data(), d_odata, mem_size,
 						cudaMemcpyDeviceToHost, main_control.st));
 
-		checkCudaErrors(cudaStreamSynchronize(main_control.st));
-
+		main_control.sync_stream();
 		bool res = compare_data(gold, h_odata, 0.0f);
 		num_rep++;
 
@@ -298,8 +297,6 @@ int main(int argc, char **argv) {
 					<< std::endl;
 
 		}
-//		if (num_rep >= NUM_REPS)
-	//	break;
 	}
 
 	main_control.end_kernel();
