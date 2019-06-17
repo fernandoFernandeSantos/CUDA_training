@@ -276,9 +276,9 @@ int main(int argc, char **argv) {
 
 		std::cout << "Copy memory back to the host" << std::endl;
 
-		checkCudaErrors(
-				cudaMemcpyAsync(h_odata.data(), d_odata, mem_size,
-						cudaMemcpyDeviceToHost, main_control.st));
+//		checkCudaErrors(
+//				cudaMemcpyAsync(h_odata.data(), d_odata, mem_size,
+//						cudaMemcpyDeviceToHost, main_control.st));
 
 		main_control.sync_stream();
 		bool res = compare_data(gold, h_odata, 0.0f);
