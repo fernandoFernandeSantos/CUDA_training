@@ -237,8 +237,8 @@ int main(int argc, char **argv) {
 	// Compute reference transpose solution
 	computeTransposeGold(gold, h_idata, size_x, size_y);
 	std::cout << std::boolalpha;
-	std::cout << "INPUT DATA " << std::endl;
-	print(h_idata, size_x, size_y);
+//	std::cout << "INPUT DATA " << std::endl;
+//	print(h_idata, size_x, size_y);
 
 	// print out common data for all kernels
 	printf(
@@ -276,9 +276,9 @@ int main(int argc, char **argv) {
 
 		std::cout << "Copy memory back to the host" << std::endl;
 
-//		checkCudaErrors(
-//				cudaMemcpyAsync(h_odata.data(), d_odata, mem_size,
-//						cudaMemcpyDeviceToHost, main_control.st));
+		checkCudaErrors(
+				cudaMemcpyAsync(h_odata.data(), d_odata, mem_size,
+						cudaMemcpyDeviceToHost, main_control.st));
 
 		main_control.sync_stream();
 		bool res = compare_data(gold, h_odata, 0.0f);
@@ -287,10 +287,10 @@ int main(int argc, char **argv) {
 		if (!res) {
 			std::cout << "Process finished failed, iteration " << num_rep
 					<< std::endl;
-			std::cout << "GOLD" << std::endl;
-			print(gold, size_x, size_y);
-			std::cout << "COMPUTED" << std::endl;
-			print(h_odata, size_x, size_y);
+//			std::cout << "GOLD" << std::endl;
+//			print(gold, size_x, size_y);
+//			std::cout << "COMPUTED" << std::endl;
+//			print(h_odata, size_x, size_y);
 
 		} else {
 			std::cout << "Process finished OK, iteration " << num_rep
