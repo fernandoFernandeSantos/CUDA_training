@@ -71,10 +71,13 @@ struct HostPersistentControler {
 					<< std::endl;
 
 			if (this->block_number <= counter) {
+				checkCudaErrors(cudaGetLastError());
+
 				return;
 			}
 			sleep(1);
 		}
+
 	}
 
 private:

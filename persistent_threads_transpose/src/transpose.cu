@@ -39,7 +39,7 @@ const char *sSDKsample = "Transpose";
 // Number of repetitions used for timing.  Two sets of repetitions are performed:
 // 1) over kernel launches and 2) inside the kernel over just the loads and stores
 
-#define NUM_REPS  10
+#define NUM_REPS  2
 
 // ---------------------
 // host utility routines
@@ -237,8 +237,6 @@ int main(int argc, char **argv) {
 	// Compute reference transpose solution
 	computeTransposeGold(gold, h_idata, size_x, size_y);
 	std::cout << std::boolalpha;
-//	std::cout << "INPUT DATA " << std::endl;
-//	print(h_idata, size_x, size_y);
 
 	// print out common data for all kernels
 	printf(
@@ -277,16 +275,22 @@ int main(int argc, char **argv) {
 		std::cout << "Copy memory back to the host" << std::endl;
 
 		checkCudaErrors(
-				cudaMemcpyAsync(h_odata.data(), d_odata, mem_size,
-						cudaMemcpyDeviceToHost, main_control.st));
+				cudaMemcpy(h_odata.data(), d_odata, mem_size,
+						cudaMemcpyDeviceToHost));
 
-		main_control.sync_stream();
+//		main_control.sync_stream();
 		bool res = compare_data(gold, h_odata, 0.0f);
 		num_rep++;
 
 		if (!res) {
 			std::cout << "Process finished failed, iteration " << num_rep
 					<< std::endl;
+
+			checkCudaErrors(
+							cudaMemcpy(h_idata.data(), d_idata, mem_size,
+									cudaMemcpyDeviceToHost));
+			std::cout << "INPUT DATA " << std::endl;
+			print(h_idata, size_x, size_y);
 			std::cout << "GOLD" << std::endl;
 			print(gold, size_x, size_y);
 			std::cout << "COMPUTED" << std::endl;
