@@ -80,7 +80,8 @@ struct HostPersistentControler {
 private:
 	void set_running(byte value) {
 		std::cout << "Setting running to " << bool(value) << std::endl;
-		set_gpu_running<<<1, 1, 0, this->st>>>(value);
+//		set_gpu_running<<<1, 1, 0, this->st>>>(value);
+		checkCudaErrors(cudaMemcpyToSymbolAsync(running, &value, 1, 0, cudaMemcpyHostToDevice, this->st));
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaStreamSynchronize(this->st));
 
