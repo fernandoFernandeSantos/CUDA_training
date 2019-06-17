@@ -39,7 +39,7 @@ const char *sSDKsample = "Transpose";
 // Number of repetitions used for timing.  Two sets of repetitions are performed:
 // 1) over kernel launches and 2) inside the kernel over just the loads and stores
 
-#define NUM_REPS  2
+#define NUM_REPS  10
 
 // ---------------------
 // host utility routines
@@ -285,21 +285,9 @@ int main(int argc, char **argv) {
 		if (!res) {
 			std::cout << "Process finished failed, iteration " << num_rep
 					<< std::endl;
-
-			checkCudaErrors(
-							cudaMemcpyAsync(h_idata.data(), d_idata, mem_size,
-									cudaMemcpyDeviceToHost, main_control.st));
-			std::cout << "INPUT DATA " << std::endl;
-			print(h_idata, size_x, size_y);
-			std::cout << "GOLD" << std::endl;
-			print(gold, size_x, size_y);
-			std::cout << "COMPUTED" << std::endl;
-			print(h_odata, size_x, size_y);
-
 		} else {
 			std::cout << "Process finished OK, iteration " << num_rep
 					<< std::endl;
-
 		}
 
 		if (num_rep > NUM_REPS)
