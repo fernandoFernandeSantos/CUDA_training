@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
 
 	copySharedMem<<<grid, threads>>>(d_odata, d_idata, size_x, size_y);
 	// Ensure no launch failure
-	//checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaGetLastError());
 
 	std::cout << "Trying persistent threads shared memory transpose"
 			<< std::endl;
