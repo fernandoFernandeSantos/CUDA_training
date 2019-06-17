@@ -297,6 +297,9 @@ int main(int argc, char **argv) {
 					<< std::endl;
 
 		}
+
+		if (num_rep > NUM_REPS)
+			break;
 	}
 
 	main_control.end_kernel();
