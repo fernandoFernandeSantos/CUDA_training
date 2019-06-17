@@ -39,7 +39,7 @@ const char *sSDKsample = "Transpose";
 // Number of repetitions used for timing.  Two sets of repetitions are performed:
 // 1) over kernel launches and 2) inside the kernel over just the loads and stores
 
-#define NUM_REPS  100
+#define NUM_REPS  10
 
 // ---------------------
 // host utility routines
@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
 
 	copySharedMem<<<grid, threads>>>(d_odata, d_idata, size_x, size_y);
 	// Ensure no launch failure
-	checkCudaErrors(cudaGetLastError());
+	//checkCudaErrors(cudaGetLastError());
 
 	std::cout << "Trying persistent threads shared memory transpose"
 			<< std::endl;
