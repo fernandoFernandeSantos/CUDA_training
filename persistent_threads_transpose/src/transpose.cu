@@ -287,8 +287,8 @@ int main(int argc, char **argv) {
 					<< std::endl;
 
 			checkCudaErrors(
-							cudaMemcpy(h_idata.data(), d_idata, mem_size,
-									cudaMemcpyDeviceToHost));
+							cudaMemcpyAsync(h_idata.data(), d_idata, mem_size,
+									cudaMemcpyDeviceToHost), main_control.st);
 			std::cout << "INPUT DATA " << std::endl;
 			print(h_idata, size_x, size_y);
 			std::cout << "GOLD" << std::endl;
