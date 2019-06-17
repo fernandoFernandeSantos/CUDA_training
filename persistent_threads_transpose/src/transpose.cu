@@ -287,10 +287,10 @@ int main(int argc, char **argv) {
 		if (!res) {
 			std::cout << "Process finished failed, iteration " << num_rep
 					<< std::endl;
-//			std::cout << "GOLD" << std::endl;
-//			print(gold, size_x, size_y);
-//			std::cout << "COMPUTED" << std::endl;
-//			print(h_odata, size_x, size_y);
+			std::cout << "GOLD" << std::endl;
+			print(gold, size_x, size_y);
+			std::cout << "COMPUTED" << std::endl;
+			print(h_odata, size_x, size_y);
 
 		} else {
 			std::cout << "Process finished OK, iteration " << num_rep
