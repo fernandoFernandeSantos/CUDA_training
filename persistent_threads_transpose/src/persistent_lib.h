@@ -129,7 +129,7 @@ struct PersistentKernel {
 	}
 
 	__device__ bool keep_working() {
-		return running == 1;
+		return bool(running);
 	}
 
 };

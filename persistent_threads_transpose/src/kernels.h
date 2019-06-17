@@ -18,9 +18,8 @@ int MAX_TILES = (FLOOR(MATRIX_SIZE_X,512) * FLOOR(MATRIX_SIZE_Y, 512))
 
 #include "persistent_lib.h"
 
-
 __device__ void process_data(float *odata, float *idata, int width,
-		int height){
+		int height) {
 	// Handle to thread block group
 	cg::thread_block cta = cg::this_thread_block();
 	__shared__ float tile[TILE_DIM][TILE_DIM];
@@ -53,12 +52,11 @@ __device__ void process_data(float *odata, float *idata, int width,
 __global__ void copySharedMem(float *odata, float *idata, int width,
 		int height) {
 	PersistentKernel pk;
-	printf("PASSOU %d\n", pk.keep_working());
-	while(pk.keep_working()){
+	do {
 		pk.wait_for_work();
 		process_data(odata, idata, width, height);
 		pk.iteration_finished();
-	}
+	} while (pk.keep_working());
 	printf("PASSSOU %d\n", threadIdx.x + threadIdx.y);
 }
 
