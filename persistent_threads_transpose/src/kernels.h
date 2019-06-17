@@ -54,10 +54,10 @@ __global__ void copySharedMem(float *odata, float *idata, int width,
 	PersistentKernel pk;
 	while (pk.keep_working()) {
 		pk.wait_for_work();
-		printf("PASSSOU %d\n", threadIdx.x + threadIdx.y);
+//		printf("PASSSOU %d\n", threadIdx.x + threadIdx.y);
 
 		process_data(odata, idata, width, height);
-		printf("PASSSOU depois %d\n", threadIdx.x + threadIdx.y);
+//		printf("PASSSOU depois %d\n", threadIdx.x + threadIdx.y);
 
 		pk.iteration_finished();
 	}
