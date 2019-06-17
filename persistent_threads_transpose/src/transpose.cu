@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
 
 		}
 //		if (num_rep >= NUM_REPS)
-		break;
+	//	break;
 	}
 
 	main_control.end_kernel();
