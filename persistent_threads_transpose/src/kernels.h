@@ -20,27 +20,64 @@ int MAX_TILES = (FLOOR(MATRIX_SIZE_X,512) * FLOOR(MATRIX_SIZE_Y, 512))
 
 __device__ void process_data(float *odata, float *idata, int width,
 		int height) {
-	// Handle to thread block group
+//	// Handle to thread block group
+//	cg::thread_block cta = cg::this_thread_block();
+//	__shared__ float tile[TILE_DIM][TILE_DIM];
+//
+//	int xIndex = blockIdx.x * TILE_DIM + threadIdx.x;
+//	int yIndex = blockIdx.y * TILE_DIM + threadIdx.y;
+//
+//	int index = xIndex + width * yIndex;
+//
+//	for (int i = 0; i < TILE_DIM; i += BLOCK_ROWS) {
+//		if (xIndex < width && yIndex < height) {
+//			tile[threadIdx.y][threadIdx.x] = idata[index];
+//		}
+//	}
+//
+//	cg::sync(cta);
+//
+//	for (int i = 0; i < TILE_DIM; i += BLOCK_ROWS) {
+//		if (xIndex < height && yIndex < width) {
+//			odata[index] = tile[threadIdx.y][threadIdx.x];
+//		}
+//	}
+
+// Handle to thread block group
 	cg::thread_block cta = cg::this_thread_block();
-	__shared__ float tile[TILE_DIM][TILE_DIM];
+	__shared__ float tile[TILE_DIM][TILE_DIM + 1];
 
-	int xIndex = blockIdx.x * TILE_DIM + threadIdx.x;
-	int yIndex = blockIdx.y * TILE_DIM + threadIdx.y;
+	int blockIdx_x, blockIdx_y;
 
-	int index = xIndex + width * yIndex;
+	// do diagonal reordering
+	if (width == height) {
+		blockIdx_y = blockIdx.x;
+		blockIdx_x = (blockIdx.x + blockIdx.y) % gridDim.x;
+	} else {
+		int bid = blockIdx.x + gridDim.x * blockIdx.y;
+		blockIdx_y = bid % gridDim.y;
+		blockIdx_x = ((bid / gridDim.y) + blockIdx_y) % gridDim.x;
+	}
 
-	for (int i = 0; i < TILE_DIM; i += BLOCK_ROWS) {
-		if (xIndex < width && yIndex < height) {
-			tile[threadIdx.y][threadIdx.x] = idata[index];
-		}
+	// from here on the code is same as previous kernel except blockIdx_x replaces blockIdx.x
+	// and similarly for y
+
+	int xIndex = blockIdx_x * TILE_DIM + threadIdx.x;
+	int yIndex = blockIdx_y * TILE_DIM + threadIdx.y;
+	int index_in = xIndex + (yIndex) * width;
+
+	xIndex = blockIdx_y * TILE_DIM + threadIdx.x;
+	yIndex = blockIdx_x * TILE_DIM + threadIdx.y;
+	int index_out = xIndex + (yIndex) * height;
+
+	for (int i = 0; i < TILE_DIM; i += BLOCK_ROWS){
+		tile[threadIdx.y + i][threadIdx.x] = idata[index_in + i * width];
 	}
 
 	cg::sync(cta);
 
-	for (int i = 0; i < TILE_DIM; i += BLOCK_ROWS) {
-		if (xIndex < height && yIndex < width) {
-			odata[index] = tile[threadIdx.y][threadIdx.x];
-		}
+	for (int i = 0; i < TILE_DIM; i += BLOCK_ROWS){
+		odata[index_out + i * height] = tile[threadIdx.x][threadIdx.y + i];
 	}
 }
 
