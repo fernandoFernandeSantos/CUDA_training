@@ -52,11 +52,11 @@ __device__ void process_data(float *odata, float *idata, int width,
 __global__ void copySharedMem(float *odata, float *idata, int width,
 		int height) {
 	PersistentKernel pk;
-//	do {
+	do {
 		pk.wait_for_work();
 		process_data(odata, idata, width, height);
 		pk.iteration_finished();
-//	} while (pk.keep_working());
+	} while (pk.keep_working());
 	printf("PASSSOU %d\n", threadIdx.x + threadIdx.y);
 }
 
