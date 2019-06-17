@@ -104,7 +104,7 @@ struct PersistentKernel {
 	__device__ void wait_for_work() {
 		__syncthreads();
 		if (this->tid_in_block == 0) {
-			while (this->local_process) {
+			while (this->local_process && running == 1) {
 				if (gpu_mutex == 0) {
 					this->local_process = false;
 				}
