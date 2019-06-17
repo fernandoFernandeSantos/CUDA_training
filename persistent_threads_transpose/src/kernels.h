@@ -57,7 +57,5 @@ __global__ void copySharedMem(float *odata, float *idata, int width,
 		process_data(odata, idata, width, height);
 		pk.iteration_finished();
 	}
-	printf("PASSSOU %d\n", threadIdx.x + threadIdx.y);
-
 }
 
