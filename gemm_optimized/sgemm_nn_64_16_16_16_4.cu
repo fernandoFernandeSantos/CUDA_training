@@ -290,7 +290,7 @@ __global__ void sgemm_kernel(half_real_t* C_inc, real_t *C, const real_t *A, con
 	half_real_t alpha_inc = half_real_t(alpha);
 	half_real_t beta_inc = half_real_t(beta);
 #pragma unroll 16
-	for (int i = 0; i < 16; i++, C += ldc) {
+	for (int i = 0; i < 16; i++, C += ldc, C_inc += ldc) {
 		C[0] = alpha * Cb[i] + beta * C[0];
 		C_inc[0] =  alpha_inc * Cb_inc[i] + beta_inc * C_inc[0];
 	}
