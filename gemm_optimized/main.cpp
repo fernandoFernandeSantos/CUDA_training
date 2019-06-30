@@ -22,13 +22,14 @@ int main(int argc, char **argv) {
 	int m;
 	int n;
 	int k;
-	m = n = k = 8192;
+	m = n = k = 4096;
 	int lda = m;
 	int ldb = n;
 	int ldc = k;
 	real_t alpha = 0.1;
 	real_t beta = 0.3;
 	const std::vector<real_t> zero_vector(m * k, 0.0);
+	const std::vector<half_real_t> zero_vector_inc(m * k, 0.0);
 	std::vector<real_t> host_a(m * n, alpha);
 	std::vector<real_t> host_b(n * k, beta);
 	std::vector<real_t> host_c(m * k, 0.0);
@@ -43,9 +44,11 @@ int main(int argc, char **argv) {
 
 	for(int t = 0; t < 10; t++){
 		device_c = zero_vector;
+		device_c_inc = zero_vector_inc;
 		sgemm(st, device_c.data(), device_a.data(), device_b.data(), m, n, k,
 					lda, ldb, ldc, alpha, beta);
-
+		device_c = zero_vector;
+		device_c_inc = zero_vector_inc;
 		sgemm_dmr(st, device_c.data(), device_c_inc.data(), device_a.data(), device_b.data(), m, n, k,
 					lda, ldb, ldc, alpha, beta);
 
