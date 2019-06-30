@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 	int ldc = k;
 	float alpha = 0.1;
 	float beta = 0.3;
-
+	const std::vector<float> zero_vector(m * k, 0.0);
 	std::vector<float> host_a(m * n, alpha);
 	std::vector<float> host_b(n * k, beta);
 	std::vector<float> host_c(m * k, 0.0);
@@ -36,8 +36,13 @@ int main(int argc, char **argv) {
 	cudaStream_t st;
 	cudaStreamCreate(&st);
 	assert(m > 512 && n > 512 && m % 64 == 0 && n % 16 == 0 && k % 16 == 0);
-	sgemm_N_N_64_16_16_16_4_special(st, device_c.data(), device_a.data(), device_b.data(), m, n, k,
+
+	for(int t = 0; t < 100; t++){
+		device_c = zero_vector;
+		sgemm_N_N_64_16_16_16_4_special(st, device_c.data(), device_a.data(), device_b.data(), m, n, k,
 					lda, ldb, ldc, alpha, beta);
+
+	}
 
 	host_c = device_c.to_vector();
 
