@@ -14,6 +14,8 @@
 #include <vector>
 #include <iostream>
 
+typedef double real_t;
+typedef float half_real_t;
 
 int main(int argc, char **argv) {
 
@@ -24,31 +26,44 @@ int main(int argc, char **argv) {
 	int lda = m;
 	int ldb = n;
 	int ldc = k;
-	float alpha = 0.1;
-	float beta = 0.3;
-	const std::vector<float> zero_vector(m * k, 0.0);
-	std::vector<float> host_a(m * n, alpha);
-	std::vector<float> host_b(n * k, beta);
-	std::vector<float> host_c(m * k, 0.0);
+	real_t alpha = 0.1;
+	real_t beta = 0.3;
+	const std::vector<real_t> zero_vector(m * k, 0.0);
+	std::vector<real_t> host_a(m * n, alpha);
+	std::vector<real_t> host_b(n * k, beta);
+	std::vector<real_t> host_c(m * k, 0.0);
+	std::vector<half_real_t> host_c_inc(m*k, 0.0);
 
-	rad::DeviceVector<float> device_c(host_c), device_a(host_a), device_b(host_b);
+	rad::DeviceVector<real_t> device_c(host_c), device_a(host_a), device_b(host_b);
+	rad::DeviceVector<half_real_t> device_c_inc(host_c_inc);
 
 	cudaStream_t st;
 	cudaStreamCreate(&st);
 	assert(m > 512 && n > 512 && m % 64 == 0 && n % 16 == 0 && k % 16 == 0);
 
-	for(int t = 0; t < 100; t++){
+	for(int t = 0; t < 10; t++){
 		device_c = zero_vector;
-		sgemm_N_N_64_16_16_16_4_special(st, device_c.data(), device_a.data(), device_b.data(), m, n, k,
+		sgemm(st, device_c.data(), device_a.data(), device_b.data(), m, n, k,
+					lda, ldb, ldc, alpha, beta);
+
+		sgemm_dmr(st, device_c.data(), device_c_inc.data(), device_a.data(), device_b.data(), m, n, k,
 					lda, ldb, ldc, alpha, beta);
 
 	}
 
 	host_c = device_c.to_vector();
+	host_c_inc = device_c_inc.to_vector();
 
 	for(int i = 0; i < 10; i++){
 		for(int j = 0; j < 10; j++){
 			std::cout << host_c[i * m + j] << " ";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << "Incomplete type" << std::endl;
+	for(int i = 0; i < 10; i++){
+		for(int j = 0; j < 10; j++){
+			std::cout << host_c_inc[i * m + j] << " ";
 		}
 		std::cout << std::endl;
 	}
