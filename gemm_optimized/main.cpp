@@ -25,7 +25,7 @@ void gemm_host(std::vector<real_t>& a, std::vector<real_t>& b,
 		for (int j = 0; j < n; j++) {
 			real_t sum = 0;
 			for (int p = 0; p < k; p++) {
-				sum += a[i * m + k] * b[k * n + j];
+				sum += a[i * m + p] * b[p * n + j];
 			}
 			c[i * m + j] = alpha * sum + beta * c[i * m + j];
 		}
@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 		auto g = test_gemm[i], f = host_c[i];
 		if (g != f) {
 			std::cout << "HOST " << g << " GPU " << f << std::endl;
+			break;
 		}
 	}
 	cudaStreamDestroy(st);
