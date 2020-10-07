@@ -33,8 +33,8 @@ struct DeviceVector {
     }
 
     DeviceVector(size_t size, const T value){
-    	std::vector<T> temp(size, value);
-    	this->from_vector(temp);
+        std::vector<T> temp(size, value);
+        this->from_vector(temp);
     }
 
     DeviceVector(size_t size) {
@@ -50,8 +50,20 @@ struct DeviceVector {
     }
 
     DeviceVector<T>& operator=(const std::vector<T>& other) {
-		from_vector(other);
+        from_vector(other);
         return *this;
+    }
+    
+    DeviceVector(const std::vector<T>& other) {
+        if (this->v_size != other.size()) {
+            this->free_data();
+        }
+        if (this->allocated == false) {
+            this->alloc_data(other.size());
+        }
+        checkFrameworkErrors(
+                cudaMemcpy(this->data, other.data(), sizeof(T) * this->v_size,
+                        cudaMemcpyHostToDevice));
     }
 
     DeviceVector<T>& operator=(const DeviceVector<T>& other) {
@@ -104,17 +116,17 @@ private:
         this->v_size = 0;
     }
 
-	void from_vector(const std::vector<T>& other) {
-		if (this->v_size != other.size()) {
-			this->free_data();
-		}
-		if (this->allocated == false) {
-			this->alloc_data(other.size());
-		}
-		checkFrameworkErrors(
-				cudaMemcpy(this->data, other.data(), sizeof(T) * this->v_size,
-						cudaMemcpyHostToDevice));
-	}
+    void from_vector(const std::vector<T>& other) {
+        if (this->v_size != other.size()) {
+            this->free_data();
+        }
+        if (this->allocated == false) {
+            this->alloc_data(other.size());
+        }
+        checkFrameworkErrors(
+                cudaMemcpy(this->data, other.data(), sizeof(T) * this->v_size,
+                        cudaMemcpyHostToDevice));
+    }
 };
 
 #endif /* DEVICE_VECTOR_H_ */

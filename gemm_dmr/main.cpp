@@ -2,6 +2,9 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <functional>
+#include <algorithm>
+#include <random>
 
 #define CUDA_API_PER_THREAD_DEFAULT_STREAM 1
 
@@ -113,6 +116,23 @@ void gemm_execute_half(Parameters<half>* p) {
 
 }
 
+template<typename type_t>
+std::vector<type_t> gen_rand_vector(size_t n){
+    std::vector<type_t> v(n);
+    
+    std::random_device rnd_device;
+    // Specify the engine and distribution.
+    std::mt19937 mersenne_engine {rnd_device()};  // Generates random integers
+    std::uniform_real_distribution<float> dist {0.1f, 0.9f};
+
+    for(auto& i : v){
+        i  = type_t(dist(mersenne_engine));
+    }
+
+    return v;
+    
+}
+
 int main() {
     int n_streams = 2;
     int m = 1024;
@@ -130,11 +150,19 @@ int main() {
     std::vector < std::thread > thread_vector;
 
     std::cout << "Allocating GPU memory\n";
+    
 
-    DeviceVector<MAIN_TYPE> A(m * n, 2.1);
-    DeviceVector<MAIN_TYPE> B(n * k, 0.004);
+
+    std::vector<MAIN_TYPE> acpu = gen_rand_vector<MAIN_TYPE>(m * n);
+    std::vector<MAIN_TYPE> bcpu = gen_rand_vector<MAIN_TYPE>(n * k);
+
+
+    DeviceVector<MAIN_TYPE> A(acpu);
+    DeviceVector<MAIN_TYPE> B(bcpu);
     DeviceVector<MAIN_TYPE> C1(m * k, 0.0f);
     DeviceVector<MAIN_TYPE> C2(m * k, 0.0f);
+    
+    
 
     std::cout << "Creating  parameters\n";
 
@@ -160,7 +188,12 @@ int main() {
     //copy and compare
     auto normal = C1.to_vector();
     auto tensor = C2.to_vector();
-    std::cout << "NOrmal " << normal[0] << " Tensor " << tensor[0] <<  " diff " << std::fabs(float(normal[0] - tensor[0])) << std::endl;
+    for(auto i = 0; i < normal.size(); i++){
+        auto ni = normal[i];
+        auto ti = tensor[i];
+        auto diff = std::fabs(ni - ti);
+        std::cout << "NOrmal " << ni << " Tensor " << ti <<  " diff " << diff << std::endl;       
+    }
 
     std::cout << "Executing time " << mysecond() - start << std::endl;
     return 0;
