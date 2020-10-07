@@ -214,5 +214,7 @@ int main(){
         }
         
     }
+    
+    std::cout << "Diff elements " << diff_elem << std::endl;
 }
 
