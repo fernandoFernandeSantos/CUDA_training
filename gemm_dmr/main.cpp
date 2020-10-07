@@ -133,7 +133,7 @@ std::vector<type_t> gen_rand_vector(size_t n){
     
 }
 
-int main() {
+int test_execution() {
     int n_streams = 2;
     int m = 1024;
     int n = m;
@@ -186,16 +186,32 @@ int main() {
     }
     
     //copy and compare
+    int counter = 0;
     auto normal = C1.to_vector();
     auto tensor = C2.to_vector();
     for(auto i = 0; i < normal.size(); i++){
         auto ni = normal[i];
         auto ti = tensor[i];
         auto diff = std::fabs(ni - ti);
-        std::cout << "NOrmal " << ni << " Tensor " << ti <<  " diff " << diff << std::endl;       
+        auto relative = diff / std::fabs(ni);
+        
+        counter += (relative > 0.2f);
+        
+            //std::cout << "NOrmal " << ni << " Tensor " << ti <<  " diff " << diff << std::endl;       
     }
 
     std::cout << "Executing time " << mysecond() - start << std::endl;
-    return 0;
+    return counter;
+}
+
+int main(){
+    
+    for(auto i = 0; i < 10000; i++){
+        auto ct = test_execution();
+        if (ct != 0){
+            std::cout << "Execution " << i << " has " << ct << " different elements that >20%\n";
+        }
+        
+    }
 }
 
