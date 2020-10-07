@@ -205,9 +205,10 @@ int test_execution() {
 }
 
 int main(){
-    
-    for(auto i = 0; i < 10000; i++){
+    auto diff_elem = 0;
+    for(auto i = 0; i < 1000; i++){
         auto ct = test_execution();
+        diff_elem += (ct != 0);
         if (ct != 0){
             std::cout << "Execution " << i << " has " << ct << " different elements that >20%\n";
         }
