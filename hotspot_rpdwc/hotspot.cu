@@ -109,7 +109,7 @@ void compareOutputGPU(double_t *vectDouble, single_t *vectSingle,
 	single_t dt = single_t(vectDouble[index]);
 	single_t st = vectSingle[index];
 
-	relative[index] = (st - dt) / st;
+	relative[index] = dt / st;
 }
 
 template<typename single_t>
