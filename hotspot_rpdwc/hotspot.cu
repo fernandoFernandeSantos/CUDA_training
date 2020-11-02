@@ -46,6 +46,24 @@ void fatal(char *s) {
 
 }
 
+void _checkFrameworkErrors(cudaError_t error, int line,
+		const char* file) {
+	if (error == cudaSuccess) {
+		return;
+	}
+	char errorDescription[250];
+	snprintf(errorDescription, 250, "CUDA Framework error: %s. Bailing.",
+			cudaGetErrorString(error));
+#ifdef LOGS
+	log_error_detail((char *)errorDescription);
+	end_log_file();
+#endif
+	printf("%s - Line: %d at %s\n", errorDescription, line, file);
+	exit (EXIT_FAILURE);
+}
+
+#define checkFrameworkErrors(error) _checkFrameworkErrors(error, __LINE__, __FILE__)
+
 void writeoutput(float *vect, int grid_rows, int grid_cols, char *file) {
 
 	int i, j, index = 0;
@@ -407,7 +425,7 @@ void run(int argc, char** argv) {
 	auto retDouble = compute_tran_temp(MatrixPowerDouble, MatrixTempDouble,
 			grid_cols, grid_rows, total_iterations, pyramid_height, blockCols,
 			blockRows, borderCols, borderRows);
-	cudaDeviceSynchronize();
+	checkFrameworkErrors(cudaDeviceSynchronize());
 
 	printf("Ending simulation\n");
 	cudaMemcpy(MatrixOutFloat.data(), MatrixTemp[ret], sizeof(float) * size,
@@ -422,7 +440,7 @@ void run(int argc, char** argv) {
 	cudaMalloc((void**) &relativeGpu, sizeof(float) * size);
 	compareOutputGPU<<<grid_cols, grid_rows>>>(MatrixTempDouble[retDouble],
 			MatrixTemp[ret], relativeGpu);
-	cudaDeviceSynchronize();
+	checkFrameworkErrors(cudaDeviceSynchronize());
 
 	cudaMemcpy(relativeCPU.data(), relativeGpu, sizeof(float) * size,
 			cudaMemcpyDeviceToHost);
