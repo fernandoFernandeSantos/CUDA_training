@@ -376,7 +376,7 @@ void run(int argc, char** argv) {
 
 	// -------------------------------------------------------------------------
 
-	float *MatrixTempDouble[2], *MatrixPowerDouble;
+	double *MatrixTempDouble[2], *MatrixPowerDouble;
 	cudaMalloc((void**) &MatrixTempDouble[0], sizeof(double) * size);
 	cudaMalloc((void**) &MatrixTempDouble[1], sizeof(double) * size);
 	cudaMemcpy(MatrixTempDouble[0], FilesavingTempDouble.data(),
