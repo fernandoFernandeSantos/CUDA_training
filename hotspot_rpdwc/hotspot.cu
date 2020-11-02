@@ -401,7 +401,7 @@ void run(int argc, char** argv) {
 	cudaMemcpy(MatrixOutFloat.data(), MatrixTemp[ret], sizeof(float) * size,
 			cudaMemcpyDeviceToHost);
 
-	cudaMemcpy(MatrixOutDouble.data(), MatrixTempDouble[ret], sizeof(float) * size,
+	cudaMemcpy(MatrixOutDouble.data(), MatrixTempDouble[retDouble], sizeof(double) * size,
 			cudaMemcpyDeviceToHost);
 
 //	writeoutput(MatrixOutFloat, grid_rows, grid_cols, ofile);
