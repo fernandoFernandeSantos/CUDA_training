@@ -85,11 +85,26 @@ void compareOutputHost(std::vector<double_t> &vectDouble,
 }
 
 template<typename double_t, typename single_t> __global__
-void compareOutputGPU(double_t *vectDouble, single_t *vectSingle) {
-	auto index = threadIdx.x;
-	auto dt = vectDouble[index];
-	auto st = vectSingle[index];
+void compareOutputGPU(double_t *vectDouble, single_t *vectSingle,
+		single_t *relative) {
+	auto index = blockIdx.x * blockDim.x + threadIdx.x;
+	single_t dt = single_t(vectDouble[index]);
+	single_t st = vectSingle[index];
 
+	relative[index] = (st - dt) / st;
+}
+
+template<typename single_t>
+void checkRelative(std::vector<single_t> &vectSingle) {
+	single_t max_relative = -99999;
+	single_t min_relative = 99999;
+
+	for (auto diff : vectSingle) {
+		max_relative = std::max(max_relative, diff);
+		min_relative = std::min(min_relative, diff);
+	}
+	std::cout << "Max relative error on host " << max_relative << std::endl;
+	std::cout << "Min relative error on host " << min_relative << std::endl;
 }
 
 void readinput(double *vectDouble, float *vect, int grid_rows, int grid_cols,
@@ -333,10 +348,7 @@ void run(int argc, char** argv) {
 	size = grid_rows * grid_cols;
 
 	/* --------------- pyramid parameters --------------- */
-# define EXPAND_RATE 2// add one iteration will extend the pyramid base by 2 per each borderline	int borderCols = (pyramid_height) * EXPAND_RATE / 2;	int borderRows = (pyramid_height) * EXPAND_RATE / 2;	int smallBlockCol = BLOCK_SIZE - (pyramid_height) * EXPAND_RATE;	int smallBlockRow = BLOCK_SIZE - (pyramid_height) * EXPAND_RATE;
-	int blockCols = grid_cols / smallBlockCol
-			+ ((grid_cols % smallBlockCol == 0) ? 0 : 1);
-	int blockRows = grid_rows / smallBlockRow
+# define EXPAND_RATE 2// add one iteration will extend the pyramid base by 2 per each borderline	int borderCols = (pyramid_height) * EXPAND_RATE / 2;	int borderRows = (pyramid_height) * EXPAND_RATE / 2;	int smallBlockCol = BLOCK_SIZE - (pyramid_height) * EXPAND_RATE;	int smallBlockRow = BLOCK_SIZE - (pyramid_height) * EXPAND_RATE;	int blockCols = grid_cols / smallBlockCol	+ ((grid_cols % smallBlockCol == 0) ? 0 : 1);	int blockRows = grid_rows / smallBlockRow
 			+ ((grid_rows % smallBlockRow == 0) ? 0 : 1);
 
 //	FilesavingTempFloat = (float *) malloc(size * sizeof(float));
@@ -401,12 +413,23 @@ void run(int argc, char** argv) {
 	cudaMemcpy(MatrixOutFloat.data(), MatrixTemp[ret], sizeof(float) * size,
 			cudaMemcpyDeviceToHost);
 
-	cudaMemcpy(MatrixOutDouble.data(), MatrixTempDouble[retDouble], sizeof(double) * size,
-			cudaMemcpyDeviceToHost);
+	cudaMemcpy(MatrixOutDouble.data(), MatrixTempDouble[retDouble],
+			sizeof(double) * size, cudaMemcpyDeviceToHost);
 
 //	writeoutput(MatrixOutFloat, grid_rows, grid_cols, ofile);
-	compareOutputHost(MatrixOutDouble, MatrixOutFloat);
+	float *relativeGpu;
+	std::vector<float> relativeCPU(size);
+	cudaMalloc((void**) &relativeGpu, sizeof(float) * size);
+	compareOutputGPU<<<grid_cols, grid_rows>>>(MatrixTempDouble[retDouble],
+			MatrixTemp[ret], relativeGpu);
+	cudaDeviceSynchronize();
 
+	cudaMemcpy(relativeCPU.data(), relativeGpu, sizeof(float) * size,
+			cudaMemcpyDeviceToHost);
+
+	checkRelative(relativeCPU);
+
+	cudaFree(relativeGpu);
 	cudaFree(MatrixPower);
 	cudaFree(MatrixTemp[0]);
 	cudaFree(MatrixTemp[1]);
