@@ -12,7 +12,7 @@ endif
 NVCC := $(CUDA_DIR)/bin/nvcc
 CC = gcc
 
-NVCC_FLAGS= -std=c++11 -ccbin $(CC)
+NVCC_FLAGS= -std=c++11 -ccbin $(CC) -O3
 
 INCLUDE := $(CUDA_DIR)/include
 
