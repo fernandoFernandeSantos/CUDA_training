@@ -253,9 +253,9 @@ __global__ void calculate_temp(int iteration,  //number of iteration
 					+ step_div_Cap
 							* (power_on_cuda[ty][tx]
 									+ (temp_on_cuda[S][tx] + temp_on_cuda[N][tx]
-											- 2.0 * temp_on_cuda[ty][tx]) * Ry_1
+											- real_t(2.0) * temp_on_cuda[ty][tx]) * Ry_1
 									+ (temp_on_cuda[ty][E] + temp_on_cuda[ty][W]
-											- 2.0 * temp_on_cuda[ty][tx]) * Rx_1
+											- real_t(2.0) * temp_on_cuda[ty][tx]) * Rx_1
 									+ (amb_temp - temp_on_cuda[ty][tx]) * Rz_1);
 
 		}
