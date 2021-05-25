@@ -43,8 +43,9 @@ def read_system_logs():
                 sys_log_file, system_log_files[log_file])
             with open(out_file, "a") as out_fp:
                 out_fp.writelines(searched_list)
-        file_size = os.path.getsize(out_file) / 1024 ** 3
-        print(f"Updating the system log size {file_size} at timestamp {datetime.fromtimestamp(time.time())}")
+        # Convert to MB
+        file_size = os.path.getsize(out_file) / 1024 ** 2
+        print(f"Updating the system log size {file_size:.2} at timestamp {datetime.fromtimestamp(time.time())}")
         if file_size:
             break
         KEEP_GOING.wait(timeout=SLEEP)
