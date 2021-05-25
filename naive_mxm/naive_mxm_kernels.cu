@@ -34,24 +34,20 @@ void naive_common_mxm(float* a, float* b, float *c, int n) {
 	c[ty * n + tx] = acc;
 }
 
-__global__
-void naive_sparse_mxm(sparse_mat a, sparse_mat b, sparse_mat c, int n) {
-
-}
-
-void cuda_malloc(float* x, int n) {
-	checkFrameworkErrors(cudaMalloc(&x, sizeof(float) * n));
-}
-
-void cuda_free(float* x, int n) {
-	checkFrameworkErrors(cudaFree(x));
-}
 
 int main(int argc, char** argv) {
 	std::cout << "Naive MXM\n";
-	int size = 1024 * 1024;
+	int n = 32;
+	int size = n * n;
 	sparse_mat a, b, c;
-	cuda_malloc(a.values, size);
+	malloc_sparse_matrix(a, size);
+	malloc_sparse_matrix(b, size);
+	malloc_sparse_matrix(c, size);
 
-	cuda_free(a.values, size);
+//	naive_sparse_mxm<<<32, 32>>>(a, b, c, 32);
+	checkFrameworkErrors(cudaDeviceSynchronize());
+
+	free_sparse_matrix(a);
+	free_sparse_matrix(b);
+	free_sparse_matrix(c);
 }
