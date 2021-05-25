@@ -2,13 +2,11 @@
 
 import os
 import time
-import threading
 from datetime import datetime
 
+CONF_FILE = '/etc/radiation-benchmarks.conf'
 # Sleep on event
 SLEEP = 1
-# event to check
-KEEP_GOING = threading.Event()
 # Max GB allowed
 MAX_MB_ALLOWED = 2048
 SEARCH_NVIDIA_STRINGS = {"nvidia", "nvrm"}
@@ -28,8 +26,8 @@ def grep_for_nvidia_errors(file, offset):
     return ret, offset
 
 
-def read_system_logs():
-    global KEEP_GOING, SLEEP
+def main():
+    global SLEEP
     var_dir_logs = "/var/log"
     # The file and its offset
     system_log_files = {
@@ -38,7 +36,7 @@ def read_system_logs():
     out_file = "/var/radiation-benchmarks/log/sys_logs.log"
 
     # The thread will work until ctrl-c is pressed
-    while KEEP_GOING.is_set() is not True:
+    while True:
         for log_file in system_log_files:
             sys_log_file = f"{var_dir_logs}/{log_file}"
             searched_list, system_log_files[log_file] = grep_for_nvidia_errors(
@@ -50,13 +48,9 @@ def read_system_logs():
         print(f"Updating the system log size {file_size:.3}MB at timestamp {datetime.fromtimestamp(int(time.time()))}")
         if file_size > MAX_MB_ALLOWED:
             break
-        KEEP_GOING.wait(timeout=SLEEP)
+
+        time.sleep(SLEEP)
 
 
-log_thread = threading.Thread(target=read_system_logs)
-try:
-    print("Starting thread")
-    log_thread.start()
-except KeyboardInterrupt:
-    KEEP_GOING.set()
-    log_thread.join()
+if __name__ == '__main__':
+    main()
