@@ -3,3 +3,5 @@
 .idea
 hotspot
 naive_mxm
+*.xml
+obj
