@@ -2,9 +2,14 @@ import os.path
 import time
 import threading
 from datetime import datetime
-SLEEP = 1
 
+# Sleep on event
+SLEEP = 1
+# event to check
 KEEP_GOING = threading.Event()
+# Max GB allowed
+MAX_MB_ALLOWED = 2048
+SEARCH_NVIDIA_STRINGS = {"nvidia", "nvrm"}
 
 
 def grep_for_nvidia_errors(file, offset):
@@ -14,7 +19,7 @@ def grep_for_nvidia_errors(file, offset):
         fp.seek(offset)
         for line in fp:
             line_lower = line.lower()
-            if "nvidia" in line_lower or "nvrm" in line_lower:
+            if any([i for i in SEARCH_NVIDIA_STRINGS if i in line_lower]):
                 ret.append(line)
             # Increase to know where to jump after
             offset += len(line)
@@ -38,9 +43,9 @@ def read_system_logs():
                 sys_log_file, system_log_files[log_file])
             with open(out_file, "a") as out_fp:
                 out_fp.writelines(searched_list)
-        file_size = os.path.getsize(out_file) / 1024 ** 2
+        file_size = os.path.getsize(out_file) / 1024 ** 3
         print(f"Updating the system log size {file_size} at timestamp {datetime.fromtimestamp(time.time())}")
-        if (file_size / 1024.0) > 2:
+        if file_size:
             break
         KEEP_GOING.wait(timeout=SLEEP)
 
