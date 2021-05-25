@@ -48,7 +48,7 @@ def read_system_logs():
         # Convert to MB
         file_size = os.path.getsize(out_file) / 1024 ** 2
         print(f"Updating the system log size {file_size:.2} at timestamp {datetime.fromtimestamp(time.time())}")
-        if file_size:
+        if file_size > MAX_MB_ALLOWED:
             break
         KEEP_GOING.wait(timeout=SLEEP)
 
